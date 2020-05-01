@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+		<title>Functions</title>
+    <link rel="stylesheet" href="css/styles.css">
+	</head>
+	<body>
+    <div class="header-div">
+      Documentation for
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm">calc-pi-x86-64-asm</a>
+    </div>
+    <div class="outer-div">
+
+
+      <div class="menu-div">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="commands00.html">RPN Commands</a></li>
+          <li><a href="commands01.html">Calculate &#960;</a></li>
+          <li><a class="active" href="commands02.html">Functions</a></li>
+          <!-- <li><a href="commands03.html">Menu TBD</a></li> -->
+          <li><a href="commands04.html">Toolbox Commands</a></li>
+          <li><a href="config.html">Configuration</a></li>
+          <li><a href="links.html">Links &amp; Referencs</a></li>
+          <li><a href="license.html">License</a></li>
+        </ul>
+      </div> <!-- /menu-div-->
+
+
+      <div class="command-div">
+        <table>
+          <tr>
+            <th>Command</th>
+            <th>Input</th>
+            <th>Output</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>f.asin</td>
+            <td>Xreg</td>
+            <td>Xreg</td>
+            <td>
+              Calculate arcsine of Xreg<br>
+              Valid input range -1 <= Xreg <= 1<br>
+              Calculation time increases as Xreg approaches |1|<br>
+              * Input range not checked *
+            </td>
+          </tr>
+          <tr>
+            <td>f.cos</td>
+            <td>Xreg</td>
+            <td>Xreg</td>
+            <td>
+              Calculate cosine of Xreg<br>
+              Valid inpuy range -2&#960; <= Xreg <= 2&#960;<br>
+              * Input range not checked *
+            </td>
+          </tr>
+          <tr>
+            <td>f.exp</td>
+            <td>Xreg</td>
+            <td>Xreg</td>
+            <td>
+              Calculate exponential of Xreg<br>
+              This is e to the power of Xreg
+            </td>
+          </tr>
+          <tr>
+            <td>f.ipwr &lt;a&gt;</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Raise the Xreg to the power of &lt;a&gt;<br>
+              Integer input on command line<br>
+              Example: ipwr 3<br>
+              Value of &lt;a&gt; must be an positive integer.
+            </td>
+          </tr>
+          <tr>
+            <td>f.ln<br>f.ln.rg<br>f.ln.is</td>
+            <td>Xreg</td>
+            <td>Xreg</td>
+            <td>
+              Calculate Natural Logarithm of Xreg<br>
+              Valid range Xreg > 0<br>
+              Method:<br>
+              f.ln (default method = f.ln.is)<br>
+              f.ln.rg Iterative guess method<br>
+              f.ln.is Infinite Series<br>
+            </td>
+          </tr>
+          <tr>
+            <td>f.nroot &lt;a&gt;</td>
+            <td>Xreg</td>
+            <td>Xreg</td>
+            <td>
+              Calculate &lt;a&gt; root of Xreg<br>
+              &lt;a&gt; supplied on command line.<br>
+              Example, square root: f.nroot 2<br>
+              Input must be positive integer<br>
+              * Input range not checked *
+            </td>
+          </tr>
+          <tr>
+            <td>f.sin</td>
+            <td>Xreg</td>
+            <td>Xreg</td>
+            <td>
+              Calculate sine of Xreg<br>
+              Valid input range -2&#960; <= Xreg <= 2&#960;<br>
+              * Input range not checked *
+            </td>
+          </tr>
+        </table>
+      </div> <!-- /command-div-->
+
+      <div class="text-div">
+        <div class="desc-title">
+          Calculator Functions
+        </div>
+        <p>
+          Angular units are in radians.
+        </p>
+        <p>
+          Sin(x) was written to check calculation of pi<br>
+          Arcsin(x) was written to check sin(x)<br>
+          Ln(x) was written to check calculation of e
+        </p>
+        <p>
+          As you can see, this is not a full function calculator.<br>
+          These limited functions were written to check results.
+        </p>
+        <p>
+          These functions have not been formally tested.<br>
+          I don't recommend using these for general use.
+        </p>
+
+      </div> <!-- /text-div -->
+
+    </div> <!-- /outer-div -->
+
+    <div class="footer-div">
+      Repository:
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm/">
+        https://github.com/cotarr/calc-pi-x86-64-asm/</a>
+    </div> <!-- /footer-div -->
+
+	</body>
+</html>

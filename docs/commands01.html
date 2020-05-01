@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+		<title>Calculate &#960;</title>
+    <link rel="stylesheet" href="css/styles.css">
+	</head>
+	<body>
+    <div class="header-div">
+      Documentation for
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm">calc-pi-x86-64-asm</a>
+    </div>
+    <div class="outer-div">
+
+
+      <div class="menu-div">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="commands00.html">RPN Commands</a></li>
+          <li><a class="active" href="commands01.html">Calculate &#960;</a></li>
+          <li><a href="commands02.html">Functions</a></li>
+          <!-- <li><a href="commands03.html">Menu TBD</a></li> -->
+          <li><a href="commands04.html">Toolbox Commands</a></li>
+          <li><a href="config.html">Configuration</a></li>
+          <li><a href="links.html">Links &amp; Referencs</a></li>
+          <li><a href="license.html">License</a></li>
+        </ul>
+      </div> <!-- /menu-div-->
+
+
+      <div class="command-div">
+        <table>
+          <tr>
+            <th>Command</th>
+            <th>Input</th>
+            <th>Output</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>c.pi</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Calculates pi using default method<br>
+              Default is Chudnovsky formula
+            </td>
+          </tr>
+          <tr>
+            <td>c.pi.ch</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Calculates pi using Chudnovsky formula
+            </td>
+          </tr>
+          <tr>
+            <td>c.pi.ra</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Calculates pi using Ramanujan formula
+            </td>
+          </tr>
+          <tr>
+            <td>c.pi.st<br>c.pi.st &lt;a&gt;</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Calculates pi using Størmer formula.<br>
+              Appending 1,2,3, or 4 as an argument will
+              break up the calculation into 4 parts.
+              This will allow 4 instances of the program
+              to be run concurrently<br>
+              1 - Output to file "pi-st-1.num"<br>
+              2 - Output to file "pi-st-2.num"<br>
+              3 - Output to file "pi-st-3.num"<br>
+              4 - Output to file "pi-st-4.num"<br>
+              1234 - Combine all 4 files."<br>
+            </td>
+          </tr>
+        </table>
+
+        <h3>Low Precision &#960; pi functions</h3>
+        <table>
+          <tr>
+            <th>Command</th>
+            <th>Input</th>
+            <th>Output</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+          <tr>
+            <td>c.pi.ze</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Estimate pi using the formula:<br>
+              zeta(2) = (pi<sup>2</sup>)/6
+            </td>
+          </tr>
+          <tr>
+            <td>c.pi.mc</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Estimate pi using a Monte Carlo simulation.
+            </td>
+          </tr>
+        </table>
+
+        <h3>Some other Constants</h3>
+        <table>
+          <tr>
+            <th>Command</th>
+            <th>Input</th>
+            <th>Output</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>c.e<br>c.e &lt;a&gt;</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              "c.e" calculates e by defeault method.<br>
+              Appending 1,2,3, or 4 as an argument will select
+              between several different methods.<br>
+              1 - Sum 1/n in fixed precision<br>
+              2 - Sum 1/n i7 Register (64 bit DIV)<br>
+              3 - Full floating point arithmetic<br>
+              4 - Use f.exp function f.exp with Xreg=1
+            </td>
+          </tr>
+          <tr>
+            <td>c.gr</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Calculates Golden Ratio
+            </td>
+          </tr>
+          <tr>
+            <td>c.ln2</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Calculates natural log of 2. ln(2)
+            </td>
+          </tr>
+          <tr>
+            <td>c.sr2</td>
+            <td></td>
+            <td>Xreg</td>
+            <td>
+              Square root of 2<br>
+            </td>
+          </tr>
+        </table>
+      </div> <!-- /command-div-->
+
+      <div class="text-div">
+        <div class="desc-title">
+          Calculation of &#960;
+        </div>
+        <p>
+          The following is a quick overview of several methods to calculate pi that are used in this program.
+          If you would like to know more about &#960, Wikipedia has a great page
+          <a href="https://en.wikipedia.org/wiki/Pi">here<a>.
+        </p>
+        <div class="desc-title">
+          &#960; by Chudnovsky formula
+        </div>
+        <p>
+          The Chudnovsky formula is my favorite method to calculate pi.
+          You can read more about it on Wikipedia <a href="https://en.wikipedia.org/wiki/Chudnovsky_algorithm">here</a>.
+          This is rapidly convergent. This program adds 711 terms of the infinite series to calculate 10,000 digits,
+          which is about 14 digits per term. You may notice a delay at the start of the program, because
+          the square root sqrt(10005) is calculated before starting the infinite series summation.
+        </p>
+        <div class="image-div">
+          <!-- 70% of native 481x139 -->
+          <img src="images/Chudnovskyformula.jpg" width="337" height="97">
+        </div>
+        <p>
+          This is a chart made in 2015 showing the time to calculate &#960; using
+          the Chudnovsky formula. The line shows how this type of arithmetic scales
+          (or perhaps does not scale) to larger size.
+          It was run a Dell XPS with an i7-4790 processor that I bought in 2014.
+          This does not include the base-10 conversion.
+        </p>
+        <!--  50% of original size 1300 x 1032 -->
+        <div class="image-div">
+          <img src="images/pi-time-chart.png" width="650" height="516"  alt="Chart of pi calculation time">
+        </div>
+
+        <div class="desc-title">
+          &#960; by Ramanaujan Formula
+        </div>
+        <p>
+          Ramanujan is a fameous Indian mathematician. Over 100 year ago,
+          he came up with this formula for pi.
+          This program adds 1264 terms of the infinite series to calculate 10,000 digits,
+          which is just under 8 digits per term.
+        <div class="image-div">
+          <!--  70% of native 411x166 -->
+          <img src="images/ramanujanformula.jpg" width="288" height="116" >
+        </div>
+        <p>
+          With a little simple algebra, the Ramanujan formula can be rearranged
+          to allow a more efficient calculation. Calculation in this program
+          use this form.
+        <p>
+        <div class="image-div">
+          <!--  70% of native 499x216 -->
+          <img src="images/ramanujanformula2.jpg" width="349" height="151" >
+        </div>
+
+        <div class="desc-title">
+          &#960; by Størmer formula
+        </div>
+        <p>
+          There are two variations to the implementation of the Størmer formula in this program.
+          You can use "c.pi.st" to calculate &#960; using the formula below.
+        </p>
+        <p>
+          The other method involves calculation of each of the 4 terms of the formula indpendantly.
+          Computers with a quad core processor can run 4 copies of the calc-pi program
+          at the same time.
+          Commands "c.pi.st 1", "c,pi-st 2", "c.pi-st 3", and "c.pi-st 4"
+          will calculate each of 4 parts separately and save the results into separate disk files.
+          The command "c.pi.st 1234" will read all 4 parts from the disk and combine them.
+        </p>
+
+        <div class="image-div">
+          <!--  70% of native 912 x 67 -->
+          <img src="images/stormerarctan.jpg" width="638" height="47" >
+        </div>
+        <div class="image-div">
+          <!--  70% of native 491 x 82 -->
+          <img src="images/arctanseries.jpg" width="343" height="57" >
+        </div>
+
+	      <div class="desc-title">
+          Calculation &#960; by Zeta(2)
+        </div>
+        <p>
+          This is an interesting case, but perhaps not a very efficient way to calculate pi.<br>
+        </p>
+        <div class="image-text">
+          Zeta(2) = &#931; (1/n<sup>2</sup>) = &#960;<sup>2</sup>/6
+        </div>
+        <p>
+          This series converges extremely slowly. It will only produce a few digits of &#960;,
+          but it is interesting to see how it works and how slowly it converges.
+        </p>
+        <p>
+          To perform the calculation, set accuracy to 10 with input "sigfigs 10".<br>
+          Set the number of cycles with the "slimit" function by typing "slimit 1000000". (or other value)<br>
+          Next calculate the series with "c.pi.ze".<br>
+        </p>
+        <div class="desc-title">
+          Calculation &#960; by Monte Carlo Simulation
+        </div>
+        <p>
+          It is possible to estimate the value of &#960; using a random number generator.
+          Take a unit circle of radius R = 1. Circumscribe a square around it with sides of the square length 2.
+          The area of the circle is A = &#960; * R<sup>2</sup>.
+          Since R = 1, the area of circle is A = &#960;. The area of the circulscribed square is A = 2 * 2 = 4.
+        </p>
+        <p>
+          Next take a random number generator and generate a series of random X,Y values in the range of -1 &lt; X &lt; 1 and -1 &lt Y &lt 1.
+          Using the formula for a right triangle, the radius of the point at (X,Y) is R = sqrt(X<sup>2</sup> + Y<sup>2</sup>).
+          In the case R < 1, the point is inside the circle. In the case R > 0, the point is outside the circle.
+          Since the ratio of area of the square (4) to the area of the circle (&#960;). We can count the points inside the circle
+          and points outside the circle. The ratio of the counts inside verses outside can be used to calculate the value of &#960;.
+          This is known as a Monte Carlo simulation because it "rolls the dice" each time to see where the point would be.
+        </p>
+        <p>
+          To perform the calculation, set accuracy to 10 with input "sigfigs 10".<br>
+          Set the number of cycles with the "slimit" function by typing "slimit 1000000". (or other value)<br>
+          Next run the Monte Carlo by typing "c.pi.mc".<br>
+        </p>
+        <p>
+          Each time the program is run, the number will be slightly different
+          Note, it is not very accurate compared to the other methods.
+        </p>
+        <div class="image-div">
+          <img src="images/pi_mc_sum.png" width="513px" height="427px">
+        </div>
+
+      </div> <!-- /text-div -->
+
+    </div> <!-- /outer-div -->
+
+    <div class="footer-div">
+      Repository:
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm/">
+        https://github.com/cotarr/calc-pi-x86-64-asm/</a>
+    </div> <!-- /footer-div -->
+
+	</body>
+</html>

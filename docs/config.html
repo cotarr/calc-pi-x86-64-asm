@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+		<title>Config</title>
+    <link rel="stylesheet" href="css/styles.css">
+	</head>
+	<body>
+    <div class="header-div">
+      Documentation for
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm">calc-pi-x86-64-asm</a>
+    </div>
+    <div class="outer-div">
+
+
+      <div class="menu-div">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="commands00.html">RPN Commands</a></li>
+          <li><a href="commands01.html">Calculate &#960;</a></li>
+          <li><a href="commands02.html">Functions</a></li>
+          <!-- <li><a href="commands03.html">Menu TBD</a></li> -->
+          <li><a href="commands04.html">Toolbox Commands</a></li>
+          <li><a class="active" href="config.html">Configuration</a></li>
+          <li><a href="links.html">Links &amp; Referencs</a></li>
+          <li><a href="license.html">License</a></li>
+        </ul>
+      </div> <!-- /menu-div-->
+
+
+      <div class="text-div">
+        <div class="desc-title">
+          Program Configuration
+        </div>
+        <p>
+          There are a number of global compiler definitions. Most of these should not be changed.
+          One configuration that can be changed is memory allocation.
+        </p>
+        <div class="desc-title">
+          Data Variable Memory Allocation
+        </div>
+        <p>
+          System memory used for floating point number variables are defined in math.asm
+          using RESQ statements to declare unitialized blocks of memory in the BSS section.
+          These are statically allocated when the program is started as part of the load image.
+          The maximum size of the floating point variables can be configured
+          in "var.header.inc". As shown below, the default variable size
+          is about 40 million decimal digits. It is suggested to uncomment one of the
+          following lines. The image contains 17 variables of this size.
+          It is necessary to recompile the binary after this is changed using
+          the make command.
+        </p>
+        <p>
+          File: var_header.inc
+        </p>
+<pre class="pre-command">
+; Variable size and Exponent size must be multiple of 4 byte (32 bit) DWord
+;
+;VAR_WSIZE  equ 0x010     ;Size of variable in words (~250  Digits)
+;VAR_WSIZE  equ 0x0100    ;Size of variable in words (~  4 KDigits)
+;VAR_WSIZE  equ 0x01000   ;Size of variable in words (~ 75 KDigits)
+;VAR_WSIZE  equ 0x010000  ;Size of variable in words (1.26 MDigits)
+;VAR_WSIZE  equ 0x040000  ;Size of variable in words ( ~5 MDigits)
+;VAR_WSIZE  equ 0x0100000 ;Size of variable in words (~20 MDigits)
+VAR_WSIZE  equ 0x0200000 ;Size of variable in words (~40 MDigits)      &lt;-- Default
+;VAR_WSIZE  equ 0x0400000 ;Size of variable in words (~80.8 MDigits)
+;VAR_WSIZE  equ 0x0800000 ;Size of variable in words (~161  MDigits)
+</pre>
+
+        <div class="desc-title">
+          Math Mode (mmode) setting
+        </div>
+        <p>
+          The backbone of this program is a series of binary bitwise arithmetic functions
+          used for multiplication and division. These are conventional multi-precisions
+          routines bitwise rotations combined with addition and subtraction.
+          However, this method is extremely slow. In order to increase speed,
+          alternate multiplication and division routines can use the 64 bit microprocessor
+          MUL and DIV instruction to work with 128 bit / 64 bit integer operaitons.
+        </p>
+        <p>
+          The "mmode" command is used to set or view a series of flags
+          used to select or de-select various alternate arithmetic methods.
+          The default value of mmode is 0.
+        </p>
+        <p>
+          For example, calculation of Pi using Chudnovsky formula to 100,000 digits:<br>
+          Time 10 seconds (mmode=0)<br>
+          Time 652 Seconds (mmode 463, full bitwise arithmetic)
+        </p>
+        <p>
+          To view the options, type: "help mmode"
+        </p>
+
+<pre class="pre-command">
+Usage: mmode &lt;optional integer bit pattern&gt;
+
+Descripton: Without argument, mmode displays MathMode variable.
+Using mmode with argument will load the integer argument into
+the MathMode variable.
+
+Modes:
+   1   (0x01)  Force: FP_Long_Mult (binary shift and add)
+   2   (0x02)  Force: FP_Long_Div (binary shift and subtract)
+   4   (0x04)  Disable: 64 bit i7 MUL with single word non-zero.
+   8   (0x08)  Disable: 64 bit i7 DIV with single word non-zero.
+   16  (0x10)  FP_Reciprocal: Disable variable accuracy.
+   32  (0x20)  FP_Reciprocal: bitwise multiplication.
+   64  (0x40)  FP_Addition: Force bitwise alignment
+   128 (0x80)  FP_Normalization: Force bitwise alignment
+   256 (0x100) Disable function ReduceSeriesAccuracy during summations
+
+   Use 0 to select normal (most efficient) mode.
+   Use 12 to force matrix mode (disable auto short).
+   Use 15 to force binary long mode.
+   Use 463 for full bitwise arithmetic (for benchmarking).
+</pre>
+      </div> <!-- /text-div -->
+
+    </div> <!-- /outer-div -->
+
+    <div class="footer-div">
+      Repository:
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm/">
+        https://github.com/cotarr/calc-pi-x86-64-asm/</a>
+    </div> <!-- /footer-div -->
+
+	</body>
+</html>

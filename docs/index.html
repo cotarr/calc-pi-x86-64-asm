@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+		<title>Home</title>
+    <link rel="stylesheet" href="css/styles.css">
+	</head>
+	<body>
+    <div class="header-div">
+      Documentation for
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm">calc-pi-x86-64-asm</a>
+    </div>
+    <div class="outer-div">
+      <div class="menu-div">
+        <ul>
+          <li><a class="active" href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="commands00.html">RPN Commands</a></li>
+          <li><a href="commands01.html">Calculate &#960;</a></li>
+          <li><a href="commands02.html">Functions</a></li>
+          <!-- <li><a href="commands03.html">Menu TBD</a></li> -->
+          <li><a href="commands04.html">Toolbox Commands</a></li>
+          <li><a href="config.html">Configuration</a></li>
+          <li><a href="links.html">Links &amp; Referencs</a></li>
+          <li><a href="license.html">License</a></li>
+        </ul>
+      </div> <!-- /menu-div-->
+
+      <div class="text-div">
+        <div class="desc-title">
+          Program Description
+        </div>
+        <p>
+          This is a work in progress...
+        </p>
+        <p>
+          Calc-pi is a 64 bit assembly languge program used to calculate &#960; (pi).
+          The interface is a simple text based RPN calculator intended
+          to run in a Linux bash command line shell.
+          It is fully stand alone and has no external library dependencies.
+        </p>
+        <div class="desc-title">
+          Exmple: pi to 1000 digits
+        </div>
+<pre class="pre-example">
+
+(Elapsed time: 0 Seconds 00:00:00) Op Code: sigfigs 1000
+
+(Elapsed time: 0 Seconds 00:00:00) Op Code: c.pi
+
+(Elapsed time: 0 Seconds 00:00:00) Op Code: print f
+
++3.1415926535 8979323846 2643383279 5028841971 6939937510 5820974944 5923078164 0628620899 8628034825 3421170679
+   8214808651 3282306647 0938446095 5058223172 5359408128 4811174502 8410270193 8521105559 6446229489 5493038196
+   4428810975 6659334461 2847564823 3786783165 2712019091 4564856692 3460348610 4543266482 1339360726 0249141273
+   7245870066 0631558817 4881520920 9628292540 9171536436 7892590360 0113305305 4882046652 1384146951 9415116094
+   3305727036 5759591953 0921861173 8193261179 3105118548 0744623799 6274956735 1885752724 8912279381 8301194912
+   9833673362 4406566430 8602139494 6395224737 1907021798 6094370277 0539217176 2931767523 8467481846 7669405132
+   0005681271 4526356082 7785771342 7577896091 7363717872 1468440901 2249534301 4654958537 1050792279 6892589235
+   4201995611 2129021960 8640344181 5981362977 4771309960 5187072113 4999999837 2978049951 0597317328 1609631859
+   5024459455 3469083026 4252230825 3344685035 2619311881 7101000313 7838752886 5875332083 8142061717 7669147303
+   5982534904 2875546873 1159562863 8823537875 9375195778 1857780532 1712268066 1300192787 6611195909 2164201989
+
+(Elapsed time: 0 Seconds 00:00:00) Op Code:
+
+</pre>
+
+        <div class="desc-title">
+          Requirements
+        </div>
+        <p>
+          64 bit Intel microprocessor or equivalent.<br>
+          300 MB available memory for about 40M significant digits (adjustable).<br>
+          64 bit Linux (Debian or Ubuntu amd64 recommended)
+        </p>
+
+        <div class="desc-title">
+          Installation
+        </div>
+        <p>
+          The program GitHub
+          <a href="https://github.com/cotarr/calc-pi-x86-64-asm"> repository </a>
+          contains assembly language source files. To build a binary
+          executable, it is necessary to compile the program using the NASM assembler. The GitHub
+          repository includes detail installation instructions in the README file.
+        </p>
+
+        <div class="desc-title">
+          Home page
+        </div>
+        <p>
+          Documentation:
+            <a href="https://cotarr.github.io/calc-pi-x86-64-asm/docs/">cotarr.github.io/calc-pi-x86-64-asm/docs/</a>
+        </p>
+
+        <p>
+          GitHub Repository
+            <a href="https://github.com/cotarr/calc-pi-x86-64-asm">github.com/cotarr/calc-pi-x86-64-asm</a>
+        </p>
+
+        <div class="desc-title">
+          Security Note
+        </div>
+        <p>
+          This application was intended for I/O limited to local keyboard and console output
+          within a Linux command line shell. This calculation includes a rather ubiquitous
+          use of memory pointers that have not been reviewed for safe pointer practices.
+          Therefore, interface for direct internet connection is not recommended.
+        </p>
+        <p>
+          System memory used for floating point number variables are defined in
+          math.asm using RESQ statements to declare unitialized blocks of memory
+          in the BSS section. These are statically allocated when the program is
+          started as part of the load image. No memory is dynamically allocated.
+        </p>
+        <p>
+          All input and output is performed using assembly language SYSCALL statements.
+          All I/O functions are located in the "io_module.asm" file.
+          They are used to accept keyboard input, produce console output, read and write
+          numbers to disk files, capture program text output to a disk file, and
+          read the system clock.
+        </p>
+        <p>
+          Filenames are specified by CLI input.
+          The default path is the working directory.
+          Filenames are not filtered to restrict path names,
+          therefore, can write to any valid path with permission of the user running the program.
+          I assume this is not an issue since you can do this from the CLI shell anyway.
+        </p>
+
+        <div class="desc-title">
+          What is this? What is it not?
+        </div>
+        <p>
+          I simple terms, it is a set of assembly language floating point math calculations that
+          can calculate several numeric constants like pi, e, ln(2) and square root of 2.
+          In order to develop these internal functions,
+          I wrapped the math capabilties into a very simple text based RNP calculator program.
+          This calculator interface provides a very useful way to work with calculations as
+          they are written and debugged.
+        </p>
+        <p>
+          This is not intended to be a multi-precision library.
+          It is not intended to be a programming language.
+          All of the internal programs are written in assembler, and there is no high level
+          language programming capabilities.
+          No validation or testing of the math functions have been perforemed.
+        </p>
+        <div class="desc-title">
+          A word about arithmetic.
+        </div>
+        <p>
+          Internal to the program, numbers are stored in binary floating point format using a
+          64 bit exponent and an abritrary number of 64 bit words as the mantissa. Numbers
+          are normalized by rotating bits until the most significant bit is non-zero.
+          Negataive numbers are 2's complement.
+        </p>
+        <p>
+          The primary backbone calculation is a set of functions for binary floating point bitwise addition, subtraction,
+          multiplication and long division. This is a simple straight forward way to
+          do arithmetic with low risk of errors. Its easy to write and easy to debug.
+          However, it is unfortuantely very slow. It is  literally operating on the numbers bit by bit.
+          To speed up the calculation, several shortcuts have been added.
+          These include: reducing the accuracy of
+          multiplicataion and division when summing an infinite series, suspending normalization
+          for intermediate calculations, replacing long division with multiplication of reciprocal,
+          and using internal processor MUL command to
+          multiply 64 bit registers to a 128 bit result, and DIV to divide 128 bit number
+          by 64 bit to get a 64 bit quotient and remainder. The floating point functions are in the source files
+          math-add.asm, math-mult.asm and math-div.asm
+        </p>
+        <p>
+          Some calculations, such as e and &#960; do not require floating point format.
+          The infinite series can be summed more efficiently when using a fixed point number.
+          Time used to perform floating point normalization will be eliminated in this mode.
+          In this case, the source file math-fixed.asm contains an alternate set of arithmetic functions
+          that can add, subtract, multiply and divide variables in fixed point mode.
+          In this format, the mantissa is shifted one word downward so the most significant 64 bit word
+          represents the integer part of a fixed point number. The 64 bit integer word can easily hold the integer part of &#960; or e.
+          The rest of the mantissa words represents the fraction part which has arbitrary number of 64 bit words.
+          Fixed point mode is only used during the intermediate summation of an infinite series.
+          Variables are always converted to floating point format at the end of a calculation. Only floating point
+          numbers can be printed. There are functions to convert between fixed point and floating point format.
+        </p>
+        <p>
+          Programming of these efficiency tricks was typically performed using the summation of 1/n!
+          to calculate e. Experiments involving various software edits were put into a spreadsheet for comparrsion.
+          The following chart shows a little history of efforts to improve the speed. However, after
+          working with these improvements for a while, it seems programming "tricks" to improve speed can often
+          cause unexpected errors or artifacts.
+        </p>
+
+        <!--  50% of original size 1468 x 1384 -->
+        <div class="image-div">
+          <img src="images/e-multi-times.png" width="734" height="692"  alt="Different times to calculate e">
+        </div>
+
+        <div class="desc-title">
+          To Do List
+        </div>
+        <p>
+          TODO - Floating point input - Currently the program only accepts positive integers as input
+          from the CLI interface. I plan to improve this to accept scientific notation and
+          fixed point numbers.
+        </p>
+        <p>
+          TODO - Trigonometric function require input range checking. Calling an infinite series
+          out of valid input range can cause the series to diverge and hang the program.
+        </p>
+
+      </div> <!-- /text-div -->
+
+    </div> <!-- outer-div -->
+
+    <div class="footer-div">
+      Repository:
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm/">
+        https://github.com/cotarr/calc-pi-x86-64-asm/</a>
+    </div> <!-- /footer-div -->
+
+	</body>
+</html>

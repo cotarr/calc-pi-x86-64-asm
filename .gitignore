@@ -1,0 +1,10 @@
+*.o
+*.lst
+calc-pi
+clean_temp.sh
+compare_case.sh
+*.num
+out
+out/
+numbers
+numbers/

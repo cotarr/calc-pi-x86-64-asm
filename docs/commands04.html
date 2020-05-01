@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+		<title>Toolbox Commands</title>
+    <link rel="stylesheet" href="css/styles.css">
+	</head>
+	<body>
+    <div class="header-div">
+      Documentation for
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm">calc-pi-x86-64-asm</a>
+    </div>
+    <div class="outer-div">
+
+
+      <div class="menu-div">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="commands00.html">RPN Commands</a></li>
+          <li><a href="commands01.html">Calculate &#960;</a></li>
+          <li><a href="commands02.html">Functions</a></li>
+          <!-- <li><a href="commands03.html">Menu TBD</a></li> -->
+          <li><a class="active" href="commands04.html">Toolbox Commands</a></li>
+          <li><a href="config.html">Configuration</a></li>
+          <li><a href="links.html">Links &amp; Referencs</a></li>
+          <li><a href="license.html">License</a></li>
+        </ul>
+      </div> <!-- /menu-div-->
+
+
+      <div class="command-div">
+        <table>
+          <tr>
+            <th>Command</th>
+            <th>Input</th>
+            <th>Output</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>cmdlist</td>
+            <td></td>
+            <td></td>
+            <td>
+              Dynaically generate a listing of all commands in the command parser.
+            </td>
+          </tr>
+          <tr>
+            <td>comment</td>
+            <td></td>
+            <td></td>
+            <td>
+              "comment &lt;a&gt;" followed by a comment string will echo the comment string &lt;a&gt; to the program output.
+              This is useful when capturing output text to a file.
+            </td>
+          </tr>
+
+          <tr>
+            <td>desc<br>descnew</td>
+            <td></td>
+            <td></td>
+            <td>
+              "descnew" will prompt the user to enter a short description string. The description is included into a variable that
+              is saved to a disk file with the save and load commands. "desc" will show the current string.
+            </td>
+          </tr>
+          <tr>
+            <td>exit<br>q</td>
+            <td></td>
+            <td></td>
+            <td>
+              Quit the program.<br>Commands "exit" and "q" are synonymous.
+            </td>
+          </tr>
+          <tr>
+            <td>head<br>headoff</td>
+            <td></td>
+            <td></td>
+            <td>
+              (Experimental) Enable display of some non-scrollable status numbers on the top of the console terminal.
+            </td>
+          </tr>
+          <tr>
+            <td>help<br>help &lt;c&gt;<br>helpall</td>
+            <td></td>
+            <td></td>
+            <td>
+              "help" displays basic help on the program.<br>
+              "help &lt;command&gt;" for help on one command<br>
+              "helpall" to print the full list<br>
+              Some commands do not have help.
+            </td>
+          </tr>
+          <tr>
+            <td>load &lt;f&gt;</td>
+            <td></td>
+            <td></td>
+            <td>
+              Read Xreg from file.<br>
+              Get filname &lt;f&gt; from input line<br>
+              File extension ".num" is appended to filename<br>
+              Example: load myfile<br>
+              Data read from file myfile.num<br>
+              Registers rotated up like number input.
+            </td>
+          </tr>
+          <tr>
+            <td>log<br>logoff</td>
+            <td></td>
+            <td></td>
+            <td>
+              The command 'log' starts a terminal log session.
+              The filenames are sequential as follows:
+              out/out001.txt, out/out002.txt, out/out003.txt ...
+              the folder 'out' must exist in the working directory.
+              Logging is stopped with the 'logoff' command.
+            </td>
+          </tr>
+          <tr>
+            <td>hex<br>hex &lt;r&gt;</td>
+            <td></td>
+            <td></td>
+            <td>
+              "hex" will print summary of all registers in abbreviated hexadecimal format.
+              This will also show register index numbers. Adding an integer
+              index number from 0 to 16 will show a specific register. The index
+              numbers are different from register name. Reg2 is index 11.
+            </td>
+          </tr>
+          <tr>
+            <td>mmode</td>
+            <td></td>
+            <td></td>
+            <td>
+              Set or View mmode (Math Mode)<br>
+              See <a href="config.html">Configuration</a>
+            </td>
+          </tr>
+          <tr>
+            <td>profile<br>profile i</td>
+            <td></td>
+            <td></td>
+            <td>
+              TBD
+            </td>
+          </tr>
+          <tr>
+            <td>q<br>exit</td>
+            <td></td>
+            <td></td>
+            <td>
+	             Quit the program.<br>
+               Commands "exit" and "q" are synonymous.
+            </td>
+          </tr>
+          <tr>
+            <td>sand</td>
+            <td></td>
+            <td></td>
+            <td>
+              Development function hook.
+            </td>
+          </tr>
+          <tr>
+            <td>sandbox</td>
+            <td></td>
+            <td></td>
+            <td>
+              Development function hook.
+            </td>
+          </tr>
+          <tr>
+            <td>save &lt;f&gt;</td>
+            <td></td>
+            <td></td>
+            <td>
+              Save Xreg to file.<br>
+              Filname &lt;f&gt; from input line<br>
+              File extension ".num" is appended to filename<br>
+              Example: save myfile<br>
+              Generated file will be myfile.num
+            </td>
+          </tr>
+          <tr>
+            <td>show<br>showoff</td>
+            <td></td>
+            <td></td>
+            <td>
+              "show" enables the progress bar. "showoff" disables it.
+              The progress bar is updated each time the term counter
+              reaches sstep (see sstep below).
+              The <a href="tutorial.html">tutorial</a> has an example.
+            </td>
+          </tr>
+
+          <tr>
+            <td>slimit<br>slimit &lt;a&gt;</td>
+            <td></td>
+            <td></td>
+            <td>
+              "slimit" will display or accept new falue for slimit value. For some
+              loop functions, the slimit variable provides an
+              upper limit to break out of the loop.
+            </td>
+          </tr>
+          <tr>
+            <td>sstep<br>sstep &lt;a&gt;</td>
+            <td></td>
+            <td></td>
+            <td>
+              "sstep" will display or accept a new value for sstep value.
+              This is the counter used to update the progress bar when summing an infinite series.
+            </td>
+          </tr>
+        </table>
+      </div> <!-- /command-div-->
+
+      <div class="text-div">
+
+        <div class="desc-title">
+          Program Help
+        </div>
+        <p>
+          The command "cmdlist" will automatically extract a list of all text commands
+          from the program command parser. Within the program, the "help &lt;command&gt;
+          function can be combined with a text
+          &lt;command&gt; to view detail information on any specific command. Example: "help print".
+        </p>
+        <p>
+          External to the program, these help pages are available from the github repositiory at:
+          <a href="https://cotarr.github.io/calc-pi-x86-64-asm/docs/">
+          cotarr.github.io/calc-pi-x86-64-asm/docs/</a>.
+        </p>
+
+        <div class="desc-title">
+          Program Sandbox
+        </div>
+        <p>
+          The "sandbox &lt;arg&gt;" command is a hook that allows a keyboard command to call
+          a section of arbitrary assembly language. Sandbox will accept a single argument,
+          typically a number such as 1, 2, or 3.
+          This allows more than one hook to call development code.
+          The sandbox is mainly used to experiment with new functions or alternate version of
+          existing functions.
+        </p>
+        <p>
+          In general, sandbox code should PUSH regisers to the stack,
+          execute some custome code, then POP the registers back off the stack execuate a RET return.
+        </p>
+
+<pre class="pre-command">
+Sandbox_test_1:
+        ; Save Registers
+        push	rax
+        push	rbx
+        push	rcx
+        push	rdx
+        ; -----------------------------------------------
+        ; Some code here
+
+        mov     rax, .Msg
+      	call    StrOut
+
+        ; -----------------------------------------------
+        ; Restore registers
+        pop	rdx
+        pop	rcx
+        pop	rbx
+        pop	rax
+        ; return to command parser
+        ret
+        
+        ; String constant to be output.
+        .Msg:   db      "Hello World", 0xD, 0xA, 0
+
+</pre>
+        <p>
+          Where sandbox is intended to run a complete function, there is
+          and alternate command "sand". The sand command is intended as a hook
+          to run one or two arbitrary assembly language instructions. This is
+          used mainly for debugging, such as changing data inside the variables
+          for a specific test.
+        </p>
+      </div> <!-- /text-div -->
+
+    </div> <!-- /outer-div -->
+
+    <div class="footer-div">
+      Repository:
+      <a href="https://github.com/cotarr/calc-pi-x86-64-asm/">
+        https://github.com/cotarr/calc-pi-x86-64-asm/</a>
+    </div> <!-- /footer-div -->
+
+	</body>
+</html>
