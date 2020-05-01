@@ -1,9 +1,5 @@
 # calc-pi-x86-64-asm
 
-### Home Page
-
-GitHub Repository: [github.com/cotarr/calc-pi-x86-64-asm](https://github.com/cotarr/calc-pi-x86-64-asm)
-
 Documentation:  [cotarr.github.io/calc-pi-x86-64-asm](https://cotarr.github.io/calc-pi-x86-64-asm)
 
 ### Description
