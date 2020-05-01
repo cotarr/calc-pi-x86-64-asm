@@ -10,7 +10,7 @@
 ; Exec:   calc-pi
 ;
 ; Created:    10/20/14
-; Last Edit:  01/10/15
+; Last Edit:  05/01/20
 ;
 ;--------------------------------------------------------------
 ; MIT License
@@ -166,7 +166,7 @@ PrintVariable:
 ;          2A)  add rounding factor to L.S.Word (may be adjusted)
 	mov	rax, [rbx+rbp]			; Get L.S.Word
 
-;                    FEDCBA9876543210 <---- Ruler
+;                     FEDCBA9876543210 <---- Ruler
 	mov	r9, 0x0000000000000000		; Add value to L.S.Word
 	add	rax, r9				; Add value to L.S.Word
 	rcl	r8, 1				; Save the CF
@@ -187,7 +187,7 @@ PrintVariable:
 	rcr	r8, 1				; Restore CF
 ;          2C)  adding carry CF to L.S.Word + ... words (DO NOT ADJUST IN LOOP)
  .loop5:
-	mov	rax, [rbx+rbp]			; Get next work in mantissa
+	mov	rax, [rbx+rbp]			; Get next word in mantissa
 	adc	rax, 0				; Add the CF
 	rcl	r8, 1				; Save the CF
 	mov	[rbx+rbp], rax			; Save the word
@@ -237,6 +237,11 @@ PrintVariable:
 ; Option for pre-division, use step of 1x10^15 , then divide by ten can follow when exponent small
 ;
 	mov	rsi, HAND_ACC			; Variable handle for division/mult calls
+
+
+;	JMP	.loop7
+
+
 .loop6a:
 	mov	rax, [rbx+EXP_MSW_OFST]		; Check for pre-division by 1x10^15 steps
 	mov	rdi, rax
@@ -258,7 +263,7 @@ PrintVariable:
 	neg	rax				; Two's compliment of exponent
 	cmp	rax, 60				; 2^60 about 1.15E+18
 	jle	.loop7				; if less, then pre-divison not needed.
-	call	FP_MultByTenE15			; Divide number by 1x10^15
+	call	FP_MultByTenE15			; Multiply number by 1x10^15
 	sub	r8, 15				; Increment exponent counter by 10^15
 	jmp	short	.loop6b			; Loop, always taken
 ;
@@ -1430,38 +1435,6 @@ MultManByTen:
 .errorMsg1	db	"MultManByTen overflow, top word not zero after last work saved", 0xD, 0xA, 0
 
 ;
-; This is older / slower method of multiply x 10 using bit rotate commands
-;
-MultManByTen_old:
-;   Save Registers
-	push	rax
-	push	rbx
-	push	rcx
-	push	rdx
-	push	rsi
-	push	rdi
-	push	rbp
-; Multiply x 2
-	call	Left1Bit			; Rotate left (times 2)
-; Copy to WorkA
-	mov	rdi, HAND_WORKA			; Handle for WorkA register
-	call	CopyVariable			; Move number handle [RSI] --> [RDI]
-; Multiply X 8
-	call	Left1Bit			; Rotate left (times 4)
-	call	Left1Bit			; Rotate left (times 8)
-; Add x2 + x8 = x10
-	call	AddMantissa			; Add to WorkA (times 2 + time 8 = times 10)
-;
-; Restore Registers
-	pop	rbp
-	pop	rdi
-	pop	rsi
-	pop	rdx
-	pop	rcx
-	pop	rbx
-	pop	rax
-	ret
-;
 ;--------------------------------------------------------------
 ;   Multiply Variable by 10
 ;
@@ -1528,7 +1501,7 @@ FP_MultByTenE15:
 ; After last word, check for overflow fixed format
 ;
 	or	r8, r8				; is R8 zero (expected result)?
-	jz	.exit				; Yes, exit
+	jz	.norm				; Yes, exit
 ;
 ; handle error
 ;
@@ -1536,6 +1509,9 @@ FP_MultByTenE15:
 	call	StrOut
 	mov	rax, 0
 	jmp	FatalError
+
+.norm:
+	call	FP_Normalize			; using RSI to normalize result
 ;
 ; Done
 ;
@@ -1550,7 +1526,7 @@ FP_MultByTenE15:
 	pop	rbx
 	pop	rax
 	ret
-.errorMsg1	db	"MultByTenE15 overflow, top word not zero after last work saved", 0xD, 0xA, 0
+.errorMsg1	db	"MultByTenE15 overflow, top word not zero after last word saved", 0xD, 0xA, 0
 
 
 ;
@@ -1594,7 +1570,6 @@ FP_DivideByTen:
 	pop	rax
 	ret
 
-
 ;---------------------------------------
 ;  Same function but divide by 1x10E15
 ;
@@ -1625,35 +1600,6 @@ FP_DivideByTenE15:
 	call	FP_Normalize			; Using handle RSI call normalize
 ; Restore Registers
 	pop	rdi
-	pop	rsi
-	pop	rdx
-	pop	rcx
-	pop	rbx
-	pop	rax
-	ret
-
-FP_DivideByTenOld:
-;   Save Registers
-	push	rax				; Working Reg
-	push	rbx				; Address Pointer
-	push	rcx				; Loop Counter
-	push	rdx				; Address Pointer
-	push	rsi				; Operand 1 handle number (Input)
-;  Source Address
-	mov	rbx, [RegAddTable+rsi*WSCALE]	; RSI (index) --> RBX (address)
-	mov	rbp, MAN_MSB_OFST		; Point at mantissa M.S.Byte
-	mov	rcx, [No_Byte]			; Get number of bytes
-	xor	rax, rax			; Clear carry byte
-	mov	dl, 0x0A			; Number to divide = 10
-.loop1:
-	mov	al, [rbx+rbp]			; Get Byte to Divide
-	div	dl				; AX Divide by DL
-	mov	[rbx+rbp], al			; Save quotent, remainder in AH
-	dec	rbp				; Decrement address pointer
-	loop	.loop1				; decrement RCX and loop until done
-;
-	call	FP_Normalize			; Using handle RSI call normalize
-; Restore Registers
 	pop	rsi
 	pop	rdx
 	pop	rcx
