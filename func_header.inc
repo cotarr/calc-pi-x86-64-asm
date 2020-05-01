@@ -204,7 +204,6 @@
 ; math-output.asm
 	global PrintResult
 	global PrintVariable
-	global PrintSciNotOld
 	global IntegerInput
 	global FP_Exponent_XReg_Input
 ; math-debug.asm
@@ -277,7 +276,6 @@
 	extern PrintResult
 	extern IntegerInput
 	extern PrintVariable
-	extern PrintSciNotOld
 	extern FP_Exponent_XReg_Input
 ; math-debug.asm
 	extern Header_Update
