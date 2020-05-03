@@ -203,6 +203,7 @@ Sum_Limit:		resq	1		; For series with fixed number terms
 ;  Internal temporary variables
 ;
 DSIGN:			resq	1		; In Multiplication/Division, holds sign
+InFlags:		resq	1		; Various FP_Input flags such as decimal point found
 Out_Mode:		resq	1		; 0=sci, 1=fix, 2=integer
 Out_Sign:		resq	1		; Holds sign in output routine
 Out_Exponent:		resq	1		; Holds exponent in output routine

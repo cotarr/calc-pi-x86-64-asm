@@ -121,8 +121,6 @@ Help_Table:
 	dq	Help_desc
 	db	"descnew", 0
 	dq	Help_descnew
-	db	"ee", 0, 0, 0, 0, 0, 0
-	dq	Help_ee
 	db	"enter", 0, 0, 0
 	dq	Help_enter
 	db	"exit", 0, 0, 0, 0
@@ -470,14 +468,6 @@ Help_descnew:
 	db	"hold a description of the variable contents. The 'descnew'", 0xD, 0xA
 	db	"command is used to enter a new description string to be used", 0xD, 0xA
 	db	"with the next 'save' command.", 0xD, 0xA, 0
-;
-;
-;
-Help_ee:
-	db	"usage: ee <power 10 integer exponent>", 0xD, 0xA, 0xA
-	db	"Description: Perhaps a temporary function, ee will multiply", 0xD, 0xA
-	db	"the value in X-Reg by 10, or divide by 10 to the count that", 0xD, 0xA
-	db	"was supplied as an integer argument. (ee = enter exponent).", 0xD, 0xA, 0
 ;
 ;
 ;

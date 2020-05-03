@@ -117,8 +117,6 @@ Command_Table:
 	dq	Command_desc
 	db	"descnew", 0
 	dq	Command_descnew
-	db	"ee", 0, 0, 0, 0, 0, 0
-	dq	Command_ee
 	db	"enter", 0, 0, 0
 	dq	Command_enter
 	db	"exit", 0, 0, 0, 0
@@ -340,13 +338,56 @@ ParseCmd:
 ;   (number)  - input
 ;
 ;...............................................
+	;
+	; Assume number start with '+' or '-' or '.' or digit '0' to '9'
+	;
+	; Case of '+' or '-' or '.' followed by 0x00 (string length = 1)
+	; In this case, it must be addition, subtraction or print command
+	;
+	; check 16 bit word  '+' + 00
+	cmp	[rax], word 0x002b
+	je	.not_number
+	; check 16 bit word  '-' + 00
+	cmp	[rax], word 0x002D
+	je	.not_number
+	; check 16 bit word  '.' + 00
+	cmp	[rax], word 0x002E
+	je	.not_number
+	; check 16 bit word  ' ' + 00
+	cmp	[rax], word 0x0020
+	je	.not_number
+	;
+	; Next, accept '+' or '-' as start of number
+	;
+	cmp	[rax], byte '+'
+	je	.is_numeric
+	cmp	[rax], byte '-'
+	je	.is_numeric
+	cmp	[rax], byte '.'
+	je	.is_numeric
+	cmp	[rax], byte ' '
+	je	.is_numeric
+
 	cmp	[rax], byte '0'	 		; Check first character of command
 	jl	.not_number			; less than 0? then skip
 	cmp	[rax], byte '9'			; greater than 9? then skip
 	jg	.not_number
 ;
-	call	IntegerInput			; call input routine with RAX is buffer addresss
+; It must be a number, convert it.
 ;
+.is_numeric:
+	; call	IntegerInput			; call input routine with RAX is buffer addresss
+
+	call	FP_Input
+	jnc	.no_input_error			; CF = 1 on error
+	;
+	; Error Message
+	mov	rax, .message_input_error
+	call	StrOut
+	call	Header_Update
+	ret
+;
+.no_input_error:
 	mov	rsi, HAND_ZREG
 	mov	rdi, HAND_TREG
 	call	CopyVariable
@@ -365,6 +406,14 @@ ParseCmd:
 ;
 	call	PrintResult
 	ret
+
+.message_input_error:
+	; red text
+	db	27, "[31m"
+	db	" Error converting string to floating point number, stack not rotated.",0xD, 0xA
+	; clear red text
+	db	27, "[0m", 0
+
 .not_number:
 
 ;--------------------------------------------------------------------------------------------
@@ -1161,21 +1210,6 @@ Command_descnew:
 	call	Header_Update
 	ret
 .Msg1:	db	"File Description: ", 0
-;
-;
-;
-Command_ee:
-	or	rax, rax
-	jz	.Error1
-	call	FP_Exponent_XReg_Input		; Address pointer in RAX
-	call	PrintResult
-	ret
-.Error1:
-	mov	rax, .Msg_err
-	call	StrOut
-	ret
-.Msg_err:
-	db	"Command Parser: Error, Exponent input has invalid argument", 0xD, 0xA, 0
 ;
 ;
 ;

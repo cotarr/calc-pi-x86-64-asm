@@ -205,7 +205,7 @@
 	global PrintResult
 	global PrintVariable
 	global IntegerInput
-	global FP_Exponent_XReg_Input
+	global FP_Input
 ; math-debug.asm
 	global Header_Update
 	global Header_Init
@@ -275,8 +275,8 @@
 ; math-output.asm
 	extern PrintResult
 	extern IntegerInput
+	extern FP_Input
 	extern PrintVariable
-	extern FP_Exponent_XReg_Input
 ; math-debug.asm
 	extern Header_Update
 	extern Header_Init

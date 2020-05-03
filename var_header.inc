@@ -169,6 +169,7 @@ TOPHAND		equ	HAND_REG7
 	global LapSTime		; System time at step calculation
 	global CalcSTime	; System time of calculation
 	global Timer0		; 10 words for timer if needed
+	global InFlags		; Various number input flags
 	global Out_Mode		; used by output routine
 	global INT_Remainder
 
@@ -255,6 +256,7 @@ TOPHAND		equ	HAND_REG7
 	extern LapSTime
 	extern CalcSTime
 	extern Timer0
+	extern InFlags		; Various FP_Input flags
 	extern Out_Mode
 	extern INT_Remainder
 

@@ -55,8 +55,8 @@
 ;--------------------------------------------------------------
 ; PrintVariable
 ; PrintResult:
+; FP_Input:
 ; IntegerInput:
-; FP_Exponent_XReg_Input:
 ; MultManByTen:
 ; FP_MultByTen:
 ; FP_MultByTenE15:
@@ -871,6 +871,493 @@ PrintResult:
 	ret
 .ACC_string:	db	"X-Reg = ", 0
 ;
+;----------------------------------------------------
+;
+; Floating Point Input
+;
+; Convert ASCII string to floating point number
+;
+;    Input:    RAX = Address of null terminated character buffer
+;
+;    Output:   (none)
+;
+;    Valid number syntax
+
+;    Leading +, -
+;      12
+;      +12
+;      -12
+;    Exponent E or e
+;      12E34
+;      12e34
+;    Exponent signs
+;      12E34
+;      12E+34
+;      12E-34
+;    Decimal Point
+;      .12
+;      1.2
+;      12.
+;      0.12
+;      12.34
+; ------------------------------------------------------
+;
+;  InFlags bits
+;  0x0001 0 = Accepting leading + or - in mantissa, 1=done
+;  0x0002 0 = positive sign 1 = negative sign need 2's compliment
+;  0x0004 0 = Accepting integer part before decimal point, 1=done
+;  0x0008 0 = Accepting fraction part after dcimal point, 1=done
+;  0x0010 0 = Accepting exponent + - sign characters, 1=done
+;  0x0020 0 = positive exponent sign, 1 = negative exponent sign
+;  0x0080 1 = Not Zero
+;  0x0100 1 = mantissa integer part has digits
+;  0x0200 1 = mantissa fraction part has digits
+;  0x0400 1 = exponent part has valid digits
+;
+; -------------------------------------------------------
+FP_Input:
+	push	rax
+	push	rbx				; Pointer to start of text string
+	push	rcx				; CL = input character from stream
+	push	rdx				; Offset into input string buffer
+	push	rsi
+	push	rdi
+	push	rbp
+	push	r8				; counter for exponent adjustment
+	push	r9				; binary exponent queue
+
+	; Initialize input flag bits and registers
+	mov	qword [InFlags], 0
+	mov	rbx, rax			; pointer to input string
+	mov	rdx, 0				; pointer to next character
+	mov	r8, 0				; exponent adjust counter
+	mov	r9, 0				; accumulator for exponent
+	;
+	; Clear ACC, used to hold number
+	;
+	mov	rsi, HAND_ACC
+	call	ClearVariable			; Clear ACC due to error
+
+; -----------------------------------------------------
+;  Main character input loop for mantissa an exponent
+; -----------------------------------------------------
+.loop:
+	call	_GetNextValidInputCharacter	; CL = input character
+	jc	.error_exit			; CF = 1 for invalid character
+	jz	.end_of_string			; ZF = 0 for end of string, no process string conversion
+
+	;
+	; skip to relevant part of input code
+	;
+	test	qword [InFlags], 0x0010		; Exponent sign character input done?
+	jnz	.skip_exponent_sign		; Yes, skip input of exponent sign chaaracter
+	;
+	test	qword [InFlags], 0x0008		; Mantissa characters after deciaml point done?
+	jnz	.skip_mantissa_fraction_digit	; Yes, skip mantissa digit input
+	;
+	test	qword [InFlags], 0x0004		; mantissa characters before decimal point done?
+	jnz	.skip_mantissa_integer_digit	; Yes, skip mantissa digits before decimal point
+	;
+	test	qword [InFlags], 0x0001		; Mantissa sign character input done?
+	jnz	.skip_mantissa_sign		; Yes, skip input of mantissa sign character
+	;
+	; -------------------------------------------------------
+	; (1) Get optional sign character at start of mantissa
+	; -------------------------------------------------------
+	cmp	cl, byte "+"
+	jne	.not_mantissa_plus
+	or	qword [InFlags], 0x0001		; set flag for sign recieved
+	jmp	.loop				; ignore + sign
+.not_mantissa_plus:
+	cmp	cl, byte "-"
+	jne	.not_mantissa_minus
+	or	qword [InFlags], 0x0001		; set flag for sign recieved
+	or	qword [InFlags], 0x0002		; set flag number is negative, need 2's compliment later
+	jmp	.loop				; ignore the - sign and get next digits
+.not_mantissa_minus:
+	; once a numeric character is input, no longer accept + or -
+	call	_CheckValidInputNumber		; see if 0-9, if so, + and - no longer valid
+	jc	.skip_mantissa_sign		; not valid, keep parsing
+	or	qword [InFlags], 0x0001		; set flag for no longer accepting sign character
+.skip_mantissa_sign:
+	; -------------------------------------------------------
+	; (2) Get mantissa digits before decimal point
+	; -------------------------------------------------------
+	call	_CheckValidInputNumber
+	jc	.not_valid_mantissa_digit	; continue parsing digits as long as in range 0-9
+	;
+	or	qword [InFlags], 0x0100		; set flag for mantissa integer digits exist
+	;
+	mov	al, cl
+	and	al, 0x0F			; Is this a non-zero digit?
+	jz	.integer_part_character_zero
+	or	qword [InFlags], 0x0080		; Yes, non-zero number, set non-zero flag
+.integer_part_character_zero:
+	; -------------------------------------------------------
+	; Digits are added to the integer part
+	; of the number by taking the previous mantissa,
+	; multiply by 10, then add the next digit.
+	; -------------------------------------------------------
+
+	; multiply integer part of mantissa from previous digits by 10
+	mov	rsi, HAND_ACC
+	call	FP_MultByTen
+
+	; convert ASCII to binary in OPR, note 8 bit to 64 bit operation with ASCII and AND
+	mov	al, cl
+	;            --fedcba9876543210 <-- ruler
+	and	rax, 0x000000000000000f
+	mov	rsi, HAND_OPR
+	call	FP_Load64BitNumber
+
+	; Add OPR to ACC with result in  ACC
+	call	FP_Addition
+
+	jmp	.loop				; Loop back and get next character
+.not_valid_mantissa_digit:
+	;
+	; check decimal point
+	;
+	cmp	cl, byte '.'			; is decimal point
+	jne	.not_mantissa_decimal_pt
+	or	qword [InFlags], 0x0004		; set flag for done integer part
+	jmp	.loop				; ignore decimal point and get next character
+.not_mantissa_decimal_pt:
+	;
+	; check decimal exponent symbol
+	;
+	cmp	cl, byte 'e'			; is e for exponent?
+	jne	.not_integer_exponent_e
+	or	qword [InFlags], 0x0004		; set flag for done integer part
+	or	qword [InFlags], 0x0008		; set flag for done fraction part
+	jmp	.loop				; ignore e and get next character
+.not_integer_exponent_e:
+	cmp	cl, byte 'E'			; is E for exponent?
+	jne	.not_integer_exponent_E
+	or	qword [InFlags], 0x0004		; set flag for done integer part
+	or	qword [InFlags], 0x0008		; set flag for done fraction part
+	jmp	.loop				; ignore E and get next character
+.not_integer_exponent_E:
+	jmp	.error_exit			; Case not "." "e" "E" must be error
+
+.skip_mantissa_integer_digit:
+	; -------------------------------------------------------
+	; (3) Get mantissa digits after decimal point
+	; -------------------------------------------------------
+	call	_CheckValidInputNumber		; continue parsing digits as long as in range 0-9
+	jc	.not_valid_fraction_digit
+	;
+	or	qword [InFlags], 0x0200		; set flag for mantissa fraction digits exist
+	;
+	mov	al, cl
+	and	al, 0x0F			; Is this a non-zero digit?
+	jz	.fraction_part_character_zero
+	or	qword [InFlags], 0x0080		; Yes, non-zero number, set non-zero flag
+.fraction_part_character_zero:
+	; -------------------------------------------------------
+	; Digits are added to the fraction part
+	; of the number by taking the previous mantissa,
+	; multiply by 10, decrement exponent adjustment counter
+	; -------------------------------------------------------
+	; multiply integer part of mantissa from previous digits by 10
+	mov	rsi, HAND_ACC
+	call	FP_MultByTen
+
+	; convert ASCII to binary in OPR, note 8 bit to 64 bit operation with ASCII and AND
+	mov	al, cl
+	;            --fedcba9876543210 <-- ruler
+	and	rax, 0x000000000000000f
+	mov	rsi, HAND_OPR
+	call	FP_Load64BitNumber
+
+	; Add OPR to ACC with result in  ACC
+	call	FP_Addition
+
+	; Divide by 10 because fraction part should not change exponent
+	mov	rsi, HAND_ACC
+
+	; Decrement exponent counter.
+	; At the end, we will divide by 10 for this many times in r8
+	dec	r8
+
+	jmp	.loop				; Loop back and get next character
+.not_valid_fraction_digit:
+	;
+	; check exponent
+	;
+	cmp	cl, byte 'e'			; is e for exponent/
+	jne	.not_fraction_exponent_e
+	or	qword [InFlags], 0x0008		; set flag for done fraction part
+	jmp	.loop				; ignore e and get next character
+.not_fraction_exponent_e:
+	cmp	cl, byte 'E'			; is E for exponent?
+	jne	.not_fraction_exponent_E
+	or	qword [InFlags], 0x0008		; set flag for done fraction part
+	jmp	.loop				; ignore E and get next character
+.not_fraction_exponent_E:
+	jmp	.error_exit			; Case not "e" "E" must be error
+
+.skip_mantissa_fraction_digit:
+	;
+	; --------------------------------------------
+	; (4) Get Exponent leading "+" or "-"
+	; --------------------------------------------
+	cmp	cl, byte "+"
+	jne	.not_exponent_plus
+	or	qword [InFlags], 0x0010		; set flag for exponent sign recieved
+	jmp	.loop				; ignore + sign
+.not_exponent_plus:
+	cmp	cl, byte "-"
+	jne	.not_exponent_minus
+	or	qword [InFlags], 0x0010		; set flag exponent sign recieved
+	or	qword [InFlags], 0x0020		; set flag exponent is negative, need 2's compliment later
+	jmp	.loop				; ignore the - sign and get next digits
+.not_exponent_minus:
+	; once a numeric character is input, no longer accept + or -
+	call	_CheckValidInputNumber		; see if 0-9, if so, + and - no longer valid
+	jc	.skip_exponent_sign		; not valid, keep parsing
+	or	qword [InFlags], 0x0010		; set flag for no longer accepting exponent sign characters
+
+.skip_exponent_sign:
+	; -------------------------------------------------------
+	; (5) Get Exponent digits
+	; -------------------------------------------------------
+	;
+	; Register R9 will hold running value of exponent
+	; For each numeric character, previous R9 will be multiplied
+	; by 10 and then binary value from character added.
+	;
+	call	_CheckValidInputNumber
+	jc	.error_exit
+	or	qword [InFlags], 0x0400		; set flag for exponent digits exist
+	; Multiply the ongoing exponent in r9 by 10 before adding next digit
+	push	rdx				; save offset to input string
+	mov	rax, r9				; get binary exponent
+	mov	rbp, 10				; Need to use register for this type of MUL
+	mul	rbp				; Multiply RAX * R9 = RDX:RAX
+	mov	r9, rax				; Return mutipled value back to R9
+	mov	rax, rdx
+	pop	rdx
+	or	rax, rax			; overflow?
+	jnz	.error_exit			; overflow into next 64 bit word
+	mov	rax, r9
+	rcl	rax, 1
+	jc	.error_exit			; overflow into sign bit.
+
+	; Convert the next character to binary, then add to exponent, chcking for overflow
+	; Note 8 bit to 64 bit cast
+	mov	al, cl				; get next character
+	;            --fedcba9876543210 <-- ruler
+	and	rax, 0x000000000000000f
+	add	r9, rax				; add binary number to exponent
+	jc	.error_exit			; don't overflow past 64 bits
+	mov	rax, r9
+	rcl	rax, 1				; don't overflow into negative number bit
+	jc	.error_exit			; overflow into sign bit.
+	;
+	jmp	.loop				; done, get next character of exponent
+
+
+.end_of_string:
+	; -------------------------------------------------------
+	; (6) General syntax error checking
+	; -------------------------------------------------------
+	; check for no numeric digits in mantissa, then error
+	mov	rax, [InFlags]			; FP Input status word
+	and	rax, 0x0300			; integer digits exist and fraction digits exist
+	jz	.error_exit			; no valid digits in mantissa, error
+	; check for no digits after e in exponent
+	mov	rax, [InFlags]			; Check for e or E but no valid digits in exponent
+	and	rax, 0x0408			; exponent digits exists and "e" was issued
+	xor	rax, 0x0008
+	jz	.error_exit
+	;
+	; Case of mantissa zero, simply return zero in ACC
+	;
+	mov	rax, [InFlags]
+	and	rax, 0x0080
+	jnz	.mantissa_not_zero
+	;
+	; return zero
+	mov	rsi, HAND_ACC
+	call	ClearVariable			; Clear ACC due to error
+	jmp	.exit				; and exit without error
+
+.mantissa_not_zero:
+	; ---------------------------------------------------------------------------------
+	; (7) Determine power of 10 offset due to fracton digits and exponent number
+	; ---------------------------------------------------------------------------------
+	; combine R8 and R8 to get shift from fracction digits and exponent shift
+	test	qword [InFlags], 0x0020		; is exponent negative flag set?
+	jz	.exponent_sign_positive		; No, exponent positive,
+	sub	r8, r9				; Else, Yes, subtract R8 = R8 - R9
+	jmp	.adjust_exponent
+.exponent_sign_positive:
+	add	r8, r9				; Exponent positive, add R8 = R8 + R9
+
+.adjust_exponent:
+
+	; -----------------------------------------------------------------------------------
+	; (8) Multiply X 10 or divide / 10 to account for fraction digits and exponent number
+	; -----------------------------------------------------------------------------------
+	mov	rax, r8				; Is exponent zero?
+	or	rax, rax			; is it zero?
+	jz	.fix_number_sign		; Yes, no adjustment needed
+
+	rcl	rax, 1				; Is exponent negative?
+	jnc	.positive_exponent_adjustment	; No, multiply by 10
+.negative_exponent_adjustment:			; Else, divide by 10
+	mov	rsi, HAND_ACC
+	call	FP_DivideByTen			; In loop, divide entire number by 10
+ 	inc	r8
+	jnz	.negative_exponent_adjustment
+	jmp	.fix_number_sign
+
+.positive_exponent_adjustment:
+	mov	rsi, HAND_ACC
+	call	FP_MultByTen			; In loop, mutiply entire number by 10
+	dec	r8
+	jnz	.positive_exponent_adjustment
+
+.fix_number_sign:
+	; ------------------------------------------------------------------------
+	; (9) If minus sign before mantissa, then perform 2's compliment to negate
+	; ------------------------------------------------------------------------
+	test	qword [InFlags], 0x0002		; Was minus sign received, then negataive
+	jz	.exit
+	;
+	; Chanage sign
+	mov	RSI, HAND_ACC
+	call	FP_TwosCompliment		; Negate the number due to - sign
+.exit:
+	pop	r9
+	pop	r8
+	pop	rbp
+	pop	rdi
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
+	; Set CF = 0 for no error
+	clc
+	ret
+.error_exit:
+	mov	rsi, HAND_ACC
+	call	ClearVariable			; Clear ACC due to error
+
+	pop	r9
+	pop	r8
+	pop	rbp
+	pop	rdi
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
+
+	; Set CF = 1 for error condition
+	stc
+	ret
+
+
+;--------------------------------
+; _GetNextValidInputCharacter
+;
+; Internal subroutine
+;
+; Input:
+;    RBX = address of text buffer
+;    RDX = pointer into current character in buffer
+;          (RDX will be incremented)
+;
+; Output:
+;    CL = Next character from input string, 0 end of string
+;    ZF = Zero flag set to 1 at end of string
+;    CF = carry set to 1 for invalid character
+;
+; Flags should be preserved with CALL/RET because there is no task switch
+;
+; Valid: 0123456789+-.eE
+;
+; Return CF = 0 Character was valid
+;--------------------------------
+_GetNextValidInputCharacter:
+	;
+	; Ignore whitespace
+	;
+	jmp	.gnc02				; Skip pointer increment, only used in loop
+.gnc01:
+	inc	rdx				; Advance pointer to skip whitespace
+.gnc02:
+	mov	cl, [rbx+rdx]			; Next character in CL
+	cmp	cl, 0x20			; Is it a space character
+	je	.gnc01				; Yes, ignore whitespace
+	cmp	cl, 0x09			; Is it a tab character
+	je	.gnc01				; Yes, ignore whitespace
+	cmp	cl, 0x0A			; Is it a new line character
+	je	.gnc01				; Yes, ignore whitespace
+	cmp	cl, 0x0D			; Is it a return character
+	je	.gnc01				; Yes, ignore whitespace
+	;
+	; Check for end of string
+	;
+	or	cl, cl				; Check for zero terminated string
+	jnz	.gnc03				; if current character zero, end of string, don't increment
+	xor	cl, cl				; ZF set to zero, CL set to 0x00
+	clc					; CF = 0 for no error
+	ret					; return CL zero for end of string
+.gnc03:
+	inc	rdx				; move pointer to next character, for next request
+	;
+	; Check valid characters
+	;
+	cmp	cl, byte '.'
+	je	.valid_character
+	cmp	cl, byte 'E'
+	je	.valid_character
+	cmp	cl, byte 'e'
+	je	.valid_character
+	cmp	cl, byte '+'
+	je	.valid_character
+	cmp	cl, byte '-'
+	je	.valid_character
+	cmp	cl, byte '0'
+	jl	.invalid_characer
+	cmp	cl, byte '9'
+	jg	.invalid_characer
+.valid_character:
+	or	cl, cl				; ZF to non-zero to show not end of sting
+	clc					; CF = 0 to show no error
+	ret					; return with CL = character
+.invalid_characer:
+	xor	cl, cl				; Set ZF = 0 to show end of string
+	stc					; Set CF = 1 for error
+	ret					; return with CL = 0x00
+
+;--------------------------------
+; Check input
+;
+; CL = input character
+;
+; Valid: 0123456789
+;
+; Return CF = 0 Character was valid
+;
+; Flags should be preserved with CALL/RET because there is no task switch
+;
+;--------------------------------
+_CheckValidInputNumber:
+	cmp	cl, byte '0'
+	jl	.invalid_characer
+	cmp	cl, byte '9'
+	jg	.invalid_characer
+	clc
+	ret
+.invalid_characer:
+	stc
+	ret
+;
 ;--------------------------------------------------------------
 ; Integer input routine
 ;
@@ -958,122 +1445,6 @@ IntegerInput:
 	pop	rax
 	ret
 ;
-;--------------------------------------------------------------
-; Exponent input routine
-;
-; This routine will take an integer value from terminal input
-; and multiply x10 or /10 to scale the xreg
-;
-;    Input:    RAX = Address of null terminated character buffer
-;
-;    Output:   (none) XReg x10 or div10 to scale
-;
-;--------------------------------------------------------------
-FP_Exponent_XReg_Input:
-;
-; Save Registers
-;
-	push	rax				; Input address, working variable
-	push	rbx
-	push	rcx
-	push	rdx				; holds exponent value
-	push	rsi
-	push	rdi				; temp during x10 mult
-	push	rbp
-	push	r10				; Address pointer
-;
-; read characters from buffer
-;
-	mov	r10, rax			; Address Pointer
-	mov	rdx, 0				; holds number
-	mov	rbx, 0				; Sign flag
-	cmp	[r10], byte '-'			; Minus sign?
-	jne	.loop1				; No go get number
-	mov	rbx, 1				; it's minus
-	inc	r10				; Dec address due to - sign
-.loop1:
-	mov	al, [r10]			; Get next character from buffe4
-	inc	r10				; Point at next character
-	cmp	al, '9'+1			; Digit > ascii '9'
-	jnc	.skip2				; Yes convert input
-	cmp	al, '0'				; Digit < ascii '0'
-	jc	.skip2				; Yes convert input
-		; call	CharOut				; Echo to screen
-	;and	al, 0FH				; Mask to BCD bits
-	and	rax, 0xF				; Mask to BCD bits
-	shl	rdx, 1				; X2
-	mov	rdi, rdx
-	shl	rdx, 2				; X4, X8
-	add	rdx, rdi			; X10
-	add	rdx, rax
-
-	;    Ruler  -->fedcba9876543210
-	mov	rax, 0xF000000000000000
-	test	rdx, rax			; Overflow?
-	jnz	.error1				; No more input
-	jmp	.loop1
-;
-; Done input, check for zero and minus
-
-.skip2:
-	or	rdx, rdx			; is it zero?
-	jz	.exit				; Yes, do nothing
-	or	rbx, rbx			; is it negative?
-	jnz	.skip_to_neg			; yes, divide
-;
-; Positive mult by 10
-;
-	mov	rsi, HAND_XREG			; handle number for X-Reg
-	mov	rcx, rdx			; get number
-.loop2:
-	call	FP_MultByTen			; Multiply using RSI handle
-	loop	.loop2				; Dec RCX until done
-;
-	mov	rax, .eeMsg2
-	call	StrOut
-	mov	al, '+'
-	call	CharOut
-	mov	rax, rdx			; Get number
-	call	PrintWordB10			; Print number
-	call	CROut
-	jmp	.exit
-;
-; Negative, divide by 10
-.skip_to_neg:
-	mov	rsi, HAND_XREG			; handle number for X-Reg
-	mov	rcx, rdx
-.loop3:
-	call	FP_DivideByTen			; Divide using RSI handle
-	loop	.loop3				; Dec RCX until done
-;
-	mov	rax, .eeMsg2
-	call	StrOut
-	mov	al, '-'
-	call	CharOut
-	mov	rax, rdx			; Get number
-	call	PrintWordB10			; Print number
-	call	CROut
-
-
-.exit:
-	pop	r10
-	pop	rbp
-	pop	rdi
-	pop	rsi
-	pop	rdx
-	pop	rcx
-	pop	rbx
-	pop	rax
-	ret
-.error1:
-	mov	rax, .errMsg1
-	call	StrOut
-	mov	rax, 0
-	jmp	FatalError
-.errMsg1:	db	0xD, 0xA, "FP_Exponent_XReg_Input - Error, input value out of range.", 0xD, 0xA, 0
-.eeMsg2:	db	"X-Reg exponent change: E", 0
-
-
 
 ;--------------------------------------------------------------
 ;   Multiply Mantissa by 10
