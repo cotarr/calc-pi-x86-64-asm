@@ -1191,7 +1191,7 @@ FP_Input:
 	test	qword [InFlags], 0x0020		; is exponent negative flag set?
 	jz	.exponent_sign_positive		; No, exponent positive,
 	sub	r8, r9				; Else, Yes, subtract R8 = R8 - R9
-	jmp	.adjust_exponent
+	jmp	short .adjust_exponent
 .exponent_sign_positive:
 	add	r8, r9				; Exponent positive, add R8 = R8 + R9
 
@@ -1206,18 +1206,46 @@ FP_Input:
 
 	rcl	rax, 1				; Is exponent negative?
 	jnc	.positive_exponent_adjustment	; No, multiply by 10
-.negative_exponent_adjustment:			; Else, divide by 10
+.negative_exponent_adjustment:
+	; this next part is to save time by reducing number multiplications
+	; First check exponent adjustment can accommodate of 1E+15 steps
+	; If able, use subroutine to divide number by 1E+15
+	; This makes use of i7 DIV command
+	mov	rax, r8				; Get curent exponet adjusment
+	neg	rax				; 2's compliment of ACC
+	cmp	rax, 15				; Can it accommodate large step times 1E+15
+	jl	.skip_large_div			; No, skip to single steps times 10
+	mov	rsi, HAND_ACC
+	call	FP_DivideByTenE15		; Multiply number by 10
+	add	r8, 15				; Decrement exponent counter
+	jz	.fix_number_sign		; If zero, done, skip steps of divide by 10
+	jmp	short .negative_exponent_adjustment
+						; else, not done, loop back
+.skip_large_div:
 	mov	rsi, HAND_ACC
 	call	FP_DivideByTen			; In loop, divide entire number by 10
  	inc	r8
 	jnz	.negative_exponent_adjustment
-	jmp	.fix_number_sign
+	jmp	short .fix_number_sign
 
 .positive_exponent_adjustment:
+	; First check if the exponent adjustment can accommodate of 1E+15 steps
+	; If able, use subroutine to multiply 1E+15
+	; This makes use of i7 MUL command
+	mov	rax, r8				; Get curent exponet adjusment
+	cmp	rax, 15				; Can it accommodate large step times 1E+15
+	jl	.skip_large_mult		; No, skip to single steps times 10
+	mov	rsi, HAND_ACC
+	call	FP_MultByTenE15			; Multiply number by 10
+	sub	r8, 15				; Decrement exponent counter
+	jz	.fix_number_sign		; If zero, done, skip steps to multiply by 10
+	jmp	short .positive_exponent_adjustment
+						; else, not done, loop back
+.skip_large_mult:
 	mov	rsi, HAND_ACC
 	call	FP_MultByTen			; In loop, mutiply entire number by 10
 	dec	r8
-	jnz	.positive_exponent_adjustment
+	jnz	.skip_large_mult
 
 .fix_number_sign:
 	; ------------------------------------------------------------------------
@@ -1286,7 +1314,7 @@ _GetNextValidInputCharacter:
 	;
 	; Ignore whitespace
 	;
-	jmp	.gnc02				; Skip pointer increment, only used in loop
+	jmp	short .gnc02			; Skip pointer increment, only used in loop
 .gnc01:
 	inc	rdx				; Advance pointer to skip whitespace
 .gnc02:
