@@ -65,7 +65,8 @@
             <td></td>
             <td></td>
             <td>
-              "descnew" will prompt the user to enter a short description string. The description is included into a variable that
+              "descnew" command will prompt the user to enter a short (31 character) description string.
+              The description is included into variable metadata that
               is saved to a disk file with the save and load commands. "desc" will show the current string.
             </td>
           </tr>
@@ -106,6 +107,7 @@
               File extension ".num" is appended to filename<br>
               Example: load myfile<br>
               Data read from file myfile.num<br>
+              With path: load ~/numbers/mynumber<br>
               Registers rotated up like number input.
             </td>
           </tr>
@@ -129,7 +131,7 @@
               "hex" will print summary of all registers in abbreviated hexadecimal format.
               This will also show register index numbers. Adding an integer
               index number from 0 to 16 will show a specific register. The index
-              numbers are different from register name. Reg2 is index 11.
+              numbers are different from register name. (Reg2 is index 11).
             </td>
           </tr>
           <tr>
@@ -146,7 +148,7 @@
             <td></td>
             <td></td>
             <td>
-              TBD
+              TBD (internal function statistics)
             </td>
           </tr>
           <tr>
@@ -183,6 +185,7 @@
               Filname &lt;f&gt; from input line<br>
               File extension ".num" is appended to filename<br>
               Example: save myfile<br>
+              With path: load ~/numbers/mynumber<br>
               Generated file will be myfile.num
             </td>
           </tr>
@@ -203,7 +206,7 @@
             <td></td>
             <td></td>
             <td>
-              "slimit" will display or accept new falue for slimit value. For some
+              "slimit" will display or accept new value for slimit value. For some
               loop functions, the slimit variable provides an
               upper limit to break out of the loop.
             </td>
@@ -281,7 +284,7 @@ Sandbox_test_1:
 </pre>
         <p>
           Where sandbox is intended to run a complete function, there is
-          and alternate command "sand". The sand command is intended as a hook
+          an alternate command "sand". The sand command is intended as a hook
           to run one or two arbitrary assembly language instructions. This is
           used mainly for debugging, such as changing data inside the variables
           for a specific test.

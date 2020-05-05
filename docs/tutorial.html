@@ -98,13 +98,13 @@ TREG   0.0
           then the value of X will be set to 5.
           You can see the contents of the stack printed after each entry.
           Math operators like + - * / operate on X and Y registers.
-          Input<in> * </in> will execute the multiply command multiplying X = X * Y.
+          Input<in> * </in> to execute the multiply command multiplying X = X * Y.
           You can see 20 in X register.
-          Note: the stack rolls down, leaving 0 in Y.
+          Note: the stack rolls down, leaving 0 in Y, Z and T registers.
           Input<in> 2 </in> will rotate X to Y leaving 20 in Y,
           and 2 is placed in the X register.
           Input <in> / </in> to call the division
-          routine will calculate Y / X, rolling the stack and leaving 10 in
+          routine to calculate Y / X, rolling the stack and leaving 10 in
           the X register.
         </p>
 
@@ -272,7 +272,7 @@ TREG   0.0
         <p>
           You will note the exponent has been removed from the output in "fix" mode.
           In summary, the program is set to internal accuracy of 500 digits.
-          An internal sub-program eas executed to calculate the constant &#960; to 500 digits.
+          An internal sub-program was executed to calculate the constant &#960; to 500 digits.
           We printed the result in "fix" notation.
         </p>
         <div class="desc-title">
@@ -356,7 +356,7 @@ TREG   0.0
           Input<in> sf 200000 </in> and input<in> c.e </in>.<br>
           Input<in> sf 500000 </in> and input<in> c.e </in>.<br>
           Input<in> sf 1000000 </in> and input<in> c.e </in>.<br><br>
-          Please observer the time needed for the calculation at each step.
+          Please observe the time needed for the calculation at each step.
           You will see the time increase exponentially.
         </p>
 

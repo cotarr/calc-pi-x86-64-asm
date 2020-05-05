@@ -86,7 +86,8 @@
               Divide Xreg = Yreg / Xreg<br>
               Rotate stack Zreg &rarr; Yreg<br>
               Rotate stack Treg &rarr; Zreg<br>
-              Set 0.0 &rarr; Treg
+              Set 0.0 &rarr; Treg<br>
+              The value of Xreg must be non-zero.
             </td>
           </tr>
 
@@ -95,7 +96,8 @@
             <td>Xreg</td>
             <td>Xreg</td>
             <td>
-              Change sign of number in Xreg
+              Change sign of number in Xreg by performing a <br>
+              2's Compliment subraction from zero.
             </td>
           </tr>
           <tr>
@@ -147,7 +149,10 @@
               RPN Enter command<br>
               Move Zreg &rarr; Treg<br>
               Move Yreg &rarr; Zreg<br>
-              Copy Xreg &rarr; Yreg
+              Copy Xreg &rarr; Yreg<br><br>
+              This is included for compatibility with scientific pocket calculators.
+              The "Enter" text command duplicates Xreg into Yreg.
+              This is different from the keyboard [Enter] key used to terminate number input.
             </td>
           </tr>
 
@@ -181,6 +186,7 @@
               File extension ".num" is appended to filename<br>
               Example: load myfile<br>
               Data read from file myfile.num<br>
+              With path: load ~/numbers/mynumber<br>
               Registers rotated up like number input.
             </td>
           </tr>
@@ -203,8 +209,9 @@
             <td></td>
             <td></td>
             <td>
-              Display Xreg, Yreg, Zreg, and Treg after each command<br>
-              Abbreviated to 50 significant digits<br>
+              Display Xreg, Yreg, Zreg, and Treg after input.<br>
+              Output abbreviated to 50 digits<br>
+              Preview modes: quiet, xonly, normal, verbose<br>
               This can cause time delay for base 10 conversion
             </td>
           </tr>
@@ -233,7 +240,8 @@
             <td></td>
             <td></td>
             <td>
-              Do not print any registers after each command
+              Do not print any registers after input.<br>
+              Preview modes: quiet, xonly, normal, verbose
             </td>
           </tr>
 
@@ -257,11 +265,11 @@
             <td></td>
             <td>
               Rotate stack down R&darr; (circular rotation)<br>
-              Temp save Xreg<br>
               Move Yreg &rarr; Xreg<br>
               Move Zreg &rarr; Yreg<br>
               Move Treg &rarr; Zreg<br>
-              Moved saved Xreg into Treg
+              (Circular) Move previous Xreg &rarr; Treg
+
             </td>
           </tr>
 
@@ -280,11 +288,11 @@
             <td></td>
             <td>
               Rotate stack up R&uarr; (circular rotation)<br>
-              Temp save Treg<br>
               Move Zreg &rarr; Treg<br>
               Move Yreg &rarr; Zreg<br>
               Move Xreg &rarr; Yreg<br>
-              Moved saved Treg into Xreg
+              (circuar) Move previous Treg &rarr; Xreg<br>
+
             </td>
           </tr>
 
@@ -297,6 +305,7 @@
               Filname &lt;f&gt; from input line<br>
               File extension ".num" is appended to filename<br>
               Example: save myfile<br>
+              With path: load ~/numbers/mynumber<br>
               Generated file will be myfile.num
             </td>
           </tr>
@@ -341,8 +350,9 @@
             <td></td>
             <td>XReg</td>
             <td>
-              Store value from Xreg to Reg0 to Reg7
-              Valid input: 0,1,2,3,4,5,6,7
+              Store value from Xreg to Reg0 to Reg7<br>
+              Valid input: 0,1,2,3,4,5,6,7<br>
+              Stack is not rotated.
             </td>
           </tr>
 
@@ -352,7 +362,7 @@
             <td></td>
             <td>
               Print abbreviated values of Xreg, Yreg, Zreg, Treg<br>
-              and Reg0 through Reg7
+              and registers Reg0 through Reg7
             </td>
           </tr>
 
@@ -361,9 +371,10 @@
             <td></td>
             <td></td>
             <td>
-              Display Xreg, Yreg, Zreg, and Treg after each command<br>
+              Display Xreg, Yreg, Zreg, and Treg after input.<br>
               Also print Reg0 through Reg7<br>
-              Abbreviated to 50 significant digits<br>
+              Output abbreviated to 50 digits<br>
+              Preview modes: quiet, xonly, normal, verbose<br>
               This can cause time delay for base 10 conversion
             </td>
           </tr>
@@ -373,8 +384,9 @@
             <td></td>
             <td></td>
             <td>
-              Display only Xreg after each command<br>
-              Abbreviated to 50 significant digits<br>
+              Display only Xreg after input.<br>
+              Output abbreviated to 50 digits<br>
+              Preview modes: quiet, xonly, normal, verbose<br>
               This can cause time delay for base 10 conversion
             </td>
           </tr>
@@ -420,11 +432,13 @@
           Numeric Input
         </div>
         <p>
-          The program will accept floating point input. <br><br>
-          Example suntax:<br>
-          123 <br>+123 <br>-123 <br>123.456 <br>12e45 <br>-12.34e-4 <br>-12.34E+232<br><br>
-          At the "Op Code:" prompt, enter number
-          values and hit the Enter/Return key. For example:
+          The program will accept floating point input. At the "Op Code:" prompt,
+          enter a numeric text string. Use the keyboard [Enter] key to terminate the input.
+          The input be converted to a binary floating point.
+          White space is ignoreed within the number.<br><br>
+          Example suntax:<br>0 <br>0.0 <br>
+          123 <br>+123 <br>-123 <br>123.456 <br>12e45 <br>-12.34e-4 <br>12.34E+2322<br>-12.34 E +232<br><br>
+          For example:
         </p>
 
 <pre class="pre-command">

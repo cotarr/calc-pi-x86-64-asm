@@ -6,9 +6,9 @@ Documentation:  [cotarr.github.io/calc-pi-x86-64-asm](https://cotarr.github.io/c
 
 This is a work in progress...
 
-Calc-pi is a 64 bit assembly languge program used to calculate pi.
+Calc-pi is a 64 bit assembly language program used to calculate pi.
 The interface is a simple text based RPN calculator intended to run in
-a Linux bash command line shell. It is fully stand alone and has no
+a Linux command line bash shell. It is fully stand alone and has no
 external library dependencies.
 
 I had fun writing this. Several friends encouraged me to share it.
@@ -25,7 +25,7 @@ My hope is that it may inspire others to try writing a program of their own.
 This application was intended for I/O limited to local keyboard and console output
 within a Linux command line shell. This calculation includes a rather ubiquitous
 use of memory pointers that have not been reviewed for safe pointer practices.
-Therefore, interface for direct internet connection is not recommended.
+Therefore, modification of the program to service a direct internet connection is not recommended.
 
 System memory used for floating point number variables are defined in
 math.asm using RESQ statements to declare uninitialized blocks of memory
@@ -42,7 +42,7 @@ Filenames are specified by CLI input.
 The default path is the working directory.
 Filenames are not filtered to restrict path names,
 therefore, can write to any valid path with permission of the user running the program.
-I assume this is not an issue since you can do this from the CLI shell anyway.
+I assume this is not an issue since you can do this independently from the CLI shell.
 
 ### Installation
 
@@ -66,7 +66,7 @@ git clone git@github.com:cotarr/calc-pi-x86-64-asm.git
 cd calc-pi-x86-64-asm
 ```
 
-Run the `make` to compile the modules and combine them with the linker.
+Run `make` to compile the modules and combine them with the linker.
 The assembler and linker options were developed for 64 bit Debian Linux.
 It works on my Ubuntu laptop. I have not tried other distributions
 of Linux. If successful, an executable file `calc-pi` should be created
@@ -96,7 +96,7 @@ To run the executable, type:
 ./calc-pi
 ```
 
-The program start by displaying a license message followed by:
+The program will start and display a license message followed by:
 ```
 Accuracy: 60 Digits
 

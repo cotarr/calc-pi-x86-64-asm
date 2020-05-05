@@ -41,7 +41,7 @@
         <p>
           Calc-pi is a 64 bit assembly languge program used to calculate &#960; (pi).
           The interface is a simple text based RPN calculator intended
-          to run in a Linux bash command line shell.
+          to run in a Linux command line bash shell.
           It is fully stand alone and has no external library dependencies.
         </p>
         <div class="desc-title">
@@ -83,25 +83,21 @@
           Installation
         </div>
         <p>
-          The program GitHub
+          The GitHub
           <a href="https://github.com/cotarr/calc-pi-x86-64-asm"> repository </a>
           contains assembly language source files. To build a binary
           executable, it is necessary to compile the program using the NASM assembler. The GitHub
           repository includes detail installation instructions in the README file.
         </p>
-
-        <div class="desc-title">
-          Home page
-        </div>
+        <p>
+          GitHub Repository
+          <a href="https://github.com/cotarr/calc-pi-x86-64-asm">github.com/cotarr/calc-pi-x86-64-asm</a>
+        </p>
         <p>
           Documentation:
             <a href="https://cotarr.github.io/calc-pi-x86-64-asm/docs/">cotarr.github.io/calc-pi-x86-64-asm/docs/</a>
         </p>
 
-        <p>
-          GitHub Repository
-            <a href="https://github.com/cotarr/calc-pi-x86-64-asm">github.com/cotarr/calc-pi-x86-64-asm</a>
-        </p>
 
         <div class="desc-title">
           Security Note
@@ -110,7 +106,7 @@
           This application was intended for I/O limited to local keyboard and console output
           within a Linux command line shell. This calculation includes a rather ubiquitous
           use of memory pointers that have not been reviewed for safe pointer practices.
-          Therefore, interface for direct internet connection is not recommended.
+          Therefore, modification of the program to service a direct internet connection is not recommended.
         </p>
         <p>
           System memory used for floating point number variables are defined in
@@ -130,7 +126,7 @@
           The default path is the working directory.
           Filenames are not filtered to restrict path names,
           therefore, can write to any valid path with permission of the user running the program.
-          I assume this is not an issue since you can do this from the CLI shell anyway.
+          I assume this is not an issue since you can do this independently from the CLI shell.
         </p>
 
         <div class="desc-title">
@@ -149,7 +145,7 @@
           It is not intended to be a programming language.
           All of the internal programs are written in assembler, and there is no high level
           language programming capabilities.
-          No validation or testing of the math functions have been perforemed.
+          No validation or testing of the math functions has been perforemed.
         </p>
         <div class="desc-title">
           A word about arithmetic.
@@ -182,13 +178,13 @@
           that can add, subtract, multiply and divide variables in fixed point mode.
           In this format, the mantissa is shifted one word downward so the most significant 64 bit word
           represents the integer part of a fixed point number. The 64 bit integer word can easily hold the integer part of &#960; or e.
-          The rest of the mantissa words represents the fraction part which has arbitrary number of 64 bit words.
+          The rest of the mantissa words represent the fraction part which has arbitrary number of 64 bit words.
           Fixed point mode is only used during the intermediate summation of an infinite series.
           Variables are always converted to floating point format at the end of a calculation. Only floating point
           numbers can be printed. There are functions to convert between fixed point and floating point format.
         </p>
         <p>
-          Programming of these efficiency tricks was typically performed using the summation of 1/n!
+          Programming of these efficiency tricks was typically developed using the summation of &#931; (1/n!)
           to calculate e. Experiments involving various software edits were put into a spreadsheet for comparrsion.
           The following chart shows a little history of efforts to improve the speed. However, after
           working with these improvements for a while, it seems programming "tricks" to improve speed can often
