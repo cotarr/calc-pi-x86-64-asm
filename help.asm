@@ -637,7 +637,7 @@ Help_mmode:
 	db	"   4   (0x04)  Disable: 64 bit i7 MUL with single word non-zero.", 0xD, 0xA
 	db	"   8   (0x08)  Disable: 64 bit i7 DIV with single word non-zero.", 0xD, 0xA
 	db	"   16  (0x10)  FP_Reciprocal: Disable variable accuracy.", 0xD, 0xA
-	db	"   32  (0x20)  FP_Reciprocal: bitwise multiplication.", 0xD, 0xA
+	db	"   32  (0x20)  FP_Reciprocal: bitwise multiplication (Destroys FP_Reg7).", 0xD, 0xA
 	db	"   64  (0x40)  FP_Addition: Force bitwise alignment", 0xD, 0xA
 	db	"   128 (0x80)  FP_Normalization: Force bitwise alignment", 0xD, 0xA
 	db	"   256 (0x100) Disable function ReduceSeriesAccuracy during summations", 0xD, 0xA, 0xA

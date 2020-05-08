@@ -1608,7 +1608,7 @@ Command_mmode:
 .Mode_N4:	db	"      Enable: Single word x86 MUL register multiplication where possible", 0xD, 0xA, 0
 .Mode_N8:	db	"      Enable: Single word x86 DIV register division where possible", 0xD, 0xA, 0
 .Mode_10:	db	"      Disable: Reciprocal variable accuracy (used in FP_Division).", 0xD, 0xA, 0
-.Mode_20:	db	"      Disable: Reciprocal 64bit word mult (used in FP_Division).", 0xD, 0xA, 0
+.Mode_20:	db	"      Disable: Reciprocal 64bit word mult * * * Destroys FP_Reg7 * * *", 0xD, 0xA, 0
 .Mode_40:	db	"   Addition: Force bitwise alignment", 0xD, 0xA, 0
 .Mode_80:	db	"   Normalize: Force bitwise alignment", 0xD, 0xA, 0
 .Mode_100:	db	"   Summation: Function ReduceSeriesAccuracy is disabled", 0xD, 0xA, 0

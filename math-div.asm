@@ -9,7 +9,7 @@
 ; Exec:   calc-pi
 ;
 ; Created:     10/23/2014
-; Last edit:   10/02/2015
+; Last edit:   05/08/2020
 ;
 ;--------------------------------------------------------------
 ; MIT License
@@ -39,8 +39,8 @@
 ; FP_Short_Division
 ; FP_Register_Division
 ; FP_Reciprocal
-; Sub_Reciprocal_Mult (internal use only)
-; Sub_Long_Reciprocal_Mult (internal use only)
+; _Sub_Reciprocal_Mult (internal use only)
+; _Sub_Long_Reciprocal_Mult (internal use only)
 ;-------------------------------------------------------------
 ;
 ;   Floating Point Division
@@ -61,20 +61,20 @@
 ;---------------------------------------------------------------
 
 FP_Division:
-; Preserve registers
+	; Preserve registers
 	push	rax				; Working Reg
 	push	rcx				; Loop Counter
 	push	rbp				; Pointer Index
 	push	r10				; Pointer Address to FP_Acc
-;
-; Check if requested to disable auto Short Division
-;
-	mov	rax, [MathMode]
-	test	rax, 8
-	jnz	.go_full_div
-;
-;Check if capable to use short division
-;
+	;
+	; Check if requested to disable auto Short Division
+	;
+	mov	rax, [MathMode]			; Get current value of mmode flag
+	test	rax, 8				; Bit 0x08 = Disable: 64 bit i7 DIV with single word non-zero.
+	jnz	.skip_short_division
+	;
+	;Check if capable to use short division
+	;
 	mov	r10, FP_Acc			; Address of ACC
 	mov	rbp, MAN_MSW_OFST-BYTE_PER_WORD	; Check if all ACC words below MSW are zero
 	mov	rcx, [No_Word]			; Loop Counter
@@ -83,37 +83,48 @@ FP_Division:
 .loop1:
 	mov	rax, [r10+rbp]			; Get word from ACC
 	or	rax, rax			; is it zero
-	jnz	.go_full_div			; Not zero, must do full multiplication
+	jnz	.skip_short_division		; Not zero, must do full multiplication
 	sub	rbp, BYTE_PER_WORD		; Decrement index
 	loop	.loop1				; Dec RCX, loop until all words checked
-;
+	;
 	pop	r10
 	pop	rbp
 	pop	rcx
 	pop	rax
 
 	jmp	FP_Short_Division
-;
-.go_full_div:
-;
-	mov	rax, [MathMode]
-	test	rax, 2
-	jnz	.long
-;
-.word:
+	;
+.skip_short_division:
+	;
+	mov	rax, [MathMode]			; Get current value of mmode
+	test	rax, 2				; Bit 0x02 = Force: FP_Long_Div (binary shift and subtract)
+	jnz	.full_bitwise_long_division
+	;
+	; In accordance with mmode [MathMode], take reciprocal and multiply in place of division
+	;
 	pop	r10
 	pop	rbp
 	pop	rcx
 	pop	rax
-	call	FP_Reciprocal
-	mov	rax, [MathMode]
-	test	rax, 32
+	call	FP_Reciprocal			; Take reciprocal of divisor with intention to multiply
+	;
+	mov	rax, [MathMode]			; Get current value of mmode
+	test	rax, 32				; Bit 0x020 = FP_Reciprocal: bitwise multiplication.
 	jz	.skip_bitwise_mult
+	;
+	; Perform full binary long multiplication (of reciprocal)
+	;
 	jmp	FP_Long_Multiplication
+	;
+	; Else, perform 64 bit word multiplication with processor MUL commands
+	;
 .skip_bitwise_mult:
 	jmp	FP_Word_Multiplication
-;
-.long:
+
+	;
+	; Else, Do the full binary long division
+	;
+.full_bitwise_long_division:
 	pop	r10
 	pop	rbp
 	pop	rcx
@@ -132,7 +143,7 @@ FP_Division:
 ;-----------------------------------------
 ;
 FP_Long_Division:
-; Preserve registers
+	; Preserve registers
 	push	rax				; General use
 	push	rbx				; Number of bits in mantissa (long division)
 	push	rcx				; Loop Counting
@@ -144,36 +155,36 @@ FP_Long_Division:
 	push	r11				; Address OPR Variable
 	push	r12				; Address WorkA Variable
 	push	r13				; Address WorkB Variable
-;
-; In case profiling, increment counter for short and long methods
-;
+	;
+	; In case profiling, increment counter for short and long methods
+	;
 %IFDEF PROFILE
 	inc	qword [iCntFPDivLong]
 %ENDIF
-;
-; Setup pointers Address Pointers
-;
+	;
+	; Setup pointers Address Pointers
+	;
 	mov	r10, FP_Acc			; Address of ACC
 	mov	r11, FP_Opr			; Addresss of OPR
 	mov	r12, FP_WorkA			; Address of WorkA
 	mov	r13, FP_WorkB			; Address of WorkF
-;
-; Check Divisior and Dividend to determine sign of Quotent
-;
+	;
+	; Check Divisior and Dividend to determine sign of Quotent
+	;
 	mov	rax, [r11+MAN_MSW_OFST]		; Get sign OPR
 	xor	rax, [r10+MAN_MSW_OFST]		; XOR ACC sign to form result sign
 	mov	[DSIGN], rax			; Save sign for later
-;
-; Check sign of ACC, if negative then call two's compliment
-;
+	;
+	; Check sign of ACC, if negative then call two's compliment
+	;
 	mov	rax, WORD8000			; Mask for sign bit
 	test	[r10+MAN_MSW_OFST], rax		; Test M.S.Word of ACC
 	jz	.skip1				; Positive, skip 2's comp.
 	mov	rsi, HAND_ACC			; Handle number of ACC
 	call	FP_TwosCompliment		; Form 2's compliment ACC
-;
-; Check ACC for zero, division by zero is fatal error, exit program
-;
+	;
+	; Check ACC for zero, division by zero is fatal error, exit program
+	;
 .skip1:
 	mov	rax, WORDFFFF			; Mask for bit test
 	test	[r10+MAN_MSW_OFST], rax		; Test M.S.Word of ACC for zero
@@ -182,18 +193,18 @@ FP_Long_Division:
 	call	StrOut
 	mov	rax, 0x0			; else, Error Division by zero
 	jmp	FatalError			; Print error and exit program
-;
-;Check sign of OPR, if negative then call two's compliment
-;
+	;
+	;Check sign of OPR, if negative then call two's compliment
+	;
 .skip2:
 	mov	rax, WORD8000			; Mask for sign bit
 	test	[r11+MAN_MSW_OFST], rax		; Test M.S.Word of OPR
 	jz	.skip3				; Positive, skip 2's comp.
 	mov	rsi, HAND_OPR			; Handle number of ACC
 	call	FP_TwosCompliment		; Form 2's compliment ACC
-;
-; Check OPR for zero. If zero then return zero result
-;
+	;
+	; Check OPR for zero. If zero then return zero result
+	;
 .skip3:
 	mov	rax, WORDFFFF			; Mask for bit test
 	test	[r11+MAN_MSW_OFST], rax		; Test M.S.Word of OPR for zero
@@ -202,28 +213,28 @@ FP_Long_Division:
 	call	ClearVariable			; Clear ACC, result is zero
 	jmp	.exit				; and exit result 0/x = 0
 .skip4:
-;
-;-------------------------
-; Long division routine for
-; full accuracy goes here
-;-------------------------
-;
-; Add exponents from  ACC and OPR, result in ACC
-;
+	;
+	;-------------------------
+	; Long division routine for
+	; full accuracy goes here
+	;-------------------------
+	;
+	; Add exponents from  ACC and OPR, result in ACC
+	;
 	mov	rax, [r11+EXP_WORD_OFST]	; Get exponet OPR
 	sub	rax, [r10+EXP_WORD_OFST]	; Subtract exponent ACC
 	add	rax, 1				; Adjust Exponent
 	mov	[r10+EXP_WORD_OFST], rax	; Save exponent in ACC
-;
-; Clear ACC variable and store exponent
-;
+	;
+	; Clear ACC variable and store exponent
+	;
 	mov	rsi, HAND_WORKA			; Point handle to WorkA
 	call	ClearVariable			; Clear WorkA
 	mov	rsi, HAND_WORKB			; Point handle to WorkB
 	call	ClearVariable			; Clear WorkB
-;
-; Calculate the number of bits in mantissa, save in R10
-;
+	;
+	; Calculate the number of bits in mantissa, save in R10
+	;
 	mov	rbx, [No_Byte]			; Get number of types in Mantissa
 	shl	rbx, 3				; X2, X4, X8 for 8 bit/byte
 	sub	rbx, 1				; Adjust for sign bit
@@ -242,10 +253,10 @@ FP_Long_Division:
 .loop55:
 	mov	rbp, [LSWOfst]			; Point at mantissa L.S.Word
 	mov	rcx, [No_Word]			; Number of words
-;
-;   Loop through words. For each Word
-;        WorkA[i] = OPR[i] - ACC[i]
-;
+	;
+	;   Loop through words. For each Word
+	;        WorkA[i] = OPR[i] - ACC[i]
+	;
 	clc					; Clear CF for subtractions
 .loop60:
 	mov	rax, [r11+rbp]			; Get word from OPR
@@ -255,15 +266,15 @@ FP_Long_Division:
 	add	rbp, BYTE_PER_WORD		; Increment pointer to next word
 	rcl	rdi, 1				; Restore CF
 	loop	.loop60				; Decrement RCX and loop until done
-;
-; If the result of the subtraction is positive
-;   then move mantissa of WorkA to OPR
-;   else skip
-;
+	;
+	; If the result of the subtraction is positive
+	;   then move mantissa of WorkA to OPR
+	;   else skip
+	;
 	mov	rax, WORD8000			; Sign bit mask
 	test	[r12+MAN_MSW_OFST], rax		; Is WorkA result negative?
 	jnz	.skip65				; Yes, leave OPR same
-;
+	;
 	mov	rbp, [LSWOfst]			; Point L.S.Word
 	mov	rcx, [No_Word]			; Counter number of words
 .loop61:
@@ -271,40 +282,40 @@ FP_Long_Division:
 	mov	[r11+rbp], rax			; Store word in OPR
 	add	rbp, BYTE_PER_WORD		; Increment pointer
 	loop	.loop61				; Decrement RCX, loop until done
-;
-; Rotate WorkB Left 1 bit
-;
+	;
+	; Rotate WorkB Left 1 bit
+	;
 .skip65:
 	mov	rsi, HAND_WORKB			; Point handle to WorkB
 	call	Left1Bit			; Shift left 1 bit
-;
-; Recycle left most bit from rotation WorkA into right most bit WorkB (out left in right)
-; This is similar to a RCL looping CF in a loop, but
-; due to sign bit, it does not actually rotate out like a CF in RCL
-;
+	;
+	; Recycle left most bit from rotation WorkA into right most bit WorkB (out left in right)
+	; This is similar to a RCL looping CF in a loop, but
+	; due to sign bit, it does not actually rotate out like a CF in RCL
+	;
 	mov	rax, WORD8000			; Sign bit mask
 	test	[r12+MAN_MSW_OFST], rax		; Was result in WorkA negative:
 	jnz	.skip66				; Yes, roll bit in
-;
+	;
 	mov	rbp, [LSWOfst]			; Get offset to current L.S. Word
 	or	qword [r13+rbp], 1		; Shift (OR) a 1 into bit0 of  WorkB
-;
-;  Rotate OPR left 1 bit
-;     Thus WorkB and OPR rotate together 1 bit at a time
-;
+	;
+	;  Rotate OPR left 1 bit
+	;     Thus WorkB and OPR rotate together 1 bit at a time
+	;
 .skip66:
 	mov	rsi, HAND_OPR			; Point handle at OPR
 	call	Left1Bit			; Shift OPR left 1 bit
-;
-; Decremen bit counter, loop until all bits rotated
-;
+	;
+	; Decremen bit counter, loop until all bits rotated
+	;
 	dec	rbx				; Decrement bit counter
 	or	rbx, rbx			; Reached zero, done?
 	jz	.skip67				; Yes, done, skip ahead
 	jmp	.loop55				; Loop back until all bits done
-;
-; Done main loop, result is in WorkB
-;
+	;
+	; Done main loop, result is in WorkB
+	;
 .skip67:
 	mov	rdx, [r10+EXP_WORD_OFST]	; Temporarily save Exponent
 	mov	rsi, HAND_WORKB			; Point handle at WorkB
@@ -315,20 +326,20 @@ FP_Long_Division:
 .skip70:
 	mov	rsi, HAND_ACC			; Point handle at ACC
 	call	FP_Normalize			; Normalize ACC
-;
-; Get original sign from memory variable
-;   and perform 2's compliment if negative
-;
+	;
+	; Get original sign from memory variable
+	;   and perform 2's compliment if negative
+	;
 
 	mov	rax, [DSIGN]			; Get sign
 	shl	rax, 1				; Shift sign bit to CF
 	jnc	.exit				; Negative? No skip
-;
+	;
 	mov	rsi, HAND_ACC			; Point handle at ACC
 	call	FP_TwosCompliment		; Form 2's compliment ACC
-;
-; Done! Restore registers and exit result in ACC
-;
+	;
+	; Done! Restore registers and exit result in ACC
+	;
 .exit:
 	pop	r13
 	pop	r12
@@ -342,7 +353,8 @@ FP_Long_Division:
 	pop	rbx
 	pop	rax
 	ret
-.MsgDivZero:	db	0xD, 0xA, "FP_Long_Divison: Error: Division by Zero", 0xD, 0xA, 0
+.MsgDivZero:
+	db	0xD, 0xA, "FP_Long_Divison: Error: Division by Zero", 0xD, 0xA, 0
 
 
 ;
@@ -350,12 +362,21 @@ FP_Long_Division:
 ;
 ;  FP_Short_Division
 ;
+;  Internal (Called from FP_Division)
+;
 ;  Use x86-64 DIV command to build result
 ;
+;  Assumes all divisor words are zero except
+;  the most significant word (Checked in FP_Division)
+;
+;  Input:  OPR register is the Numerator
+;          ACC register is the Denominator
+;
+;  Output  ACC register contains the Quotient
 ;-----------------------------------------
 ;
 FP_Short_Division:
-; Preserve registers
+	; Preserve registers
 	push	rax				; General use
 	push	rbx				; Number of bits in mantissa (long division)
 	push	rcx				; Loop Counting
@@ -365,34 +386,34 @@ FP_Short_Division:
 	push	rbp				; Variable offset address pointer
 	push	r10				; Address ACC Variable
 	push	r11				; Address OPR Variable
-;
-; In case profiling, increment counter for short and long methods
-;
+	;
+	; In case profiling, increment counter for short and long methods
+	;
 %IFDEF PROFILE
 	inc	qword [iCntFPDivShort]
 %ENDIF
-;
-; Setup pointers Address Pointers
-;
+	;
+	; Setup pointers Address Pointers
+	;
 	mov	r10, FP_Acc			; Address of ACC
 	mov	r11, FP_Opr			; Addresss of OPR
-;
-; Check Divisior and Dividend to determine sign of Quotent
-;
+	;
+	; Check Divisior and Dividend to determine sign of Quotent
+	;
 	mov	rax, [r11+MAN_MSW_OFST]		; Get sign OPR
 	xor	rax, [r10+MAN_MSW_OFST]		; XOR ACC sign to form result sign
 	mov	[DSIGN], rax			; Save sign for later
-;
-; Check sign of ACC, if negative then call two's compliment
-;
+	;
+	; Check sign of ACC, if negative then call two's compliment
+	;
 	mov	rax, WORD8000			; Mask for sign bit
 	test	[r10+MAN_MSW_OFST], rax		; Test M.S.Word of ACC
 	jz	.skip1				; Positive, skip 2's comp.
 	mov	rsi, HAND_ACC			; Handle number of ACC
 	call	FP_TwosCompliment		; Form 2's compliment ACC
-;
-; Check ACC for zero, division by zero is fatal error, exit program
-;
+	;
+	; Check ACC for zero, division by zero is fatal error, exit program
+	;
 .skip1:
 	mov	rax, WORDFFFF			; Mask for bit test
 	test	[r10+MAN_MSW_OFST], rax		; Test M.S.Word of ACC for zero
@@ -401,18 +422,18 @@ FP_Short_Division:
 	call	StrOut
 	mov	rax, 0x0			; else, Error Division by zero
 	jmp	FatalError			; Print error and exit program
-;
-;Check sign of OPR, if negative then call two's compliment
-;
+	;
+	;Check sign of OPR, if negative then call two's compliment
+	;
 .skip2:
 	mov	rax, WORD8000			; Mask for sign bit
 	test	[r11+MAN_MSW_OFST], rax		; Test M.S.Word of OPR
 	jz	.skip3				; Positive, skip 2's comp.
 	mov	rsi, HAND_OPR			; Handle number of ACC
 	call	FP_TwosCompliment		; Form 2's compliment ACC
-;
-; Check OPR for zero. If zero then return zero result
-;
+	;
+	; Check OPR for zero. If zero then return zero result
+	;
 .skip3:
 	mov	rax, WORDFFFF			; Mask for bit test
 	test	[r11+MAN_MSW_OFST], rax		; Test M.S.Word of OPR for zero
@@ -421,12 +442,11 @@ FP_Short_Division:
 	call	ClearVariable			; Clear ACC, result is zero
 	jmp	.exit				; and exit result 0/x = 0
 .skip4:
-;
-; Shift number right in M.S.Word
-;
+	;
+	; Shift number right in M.S.Word
+	;
 	mov	rax, [r10+MAN_MSW_OFST]		; Get M.S.Word Mantissa
-	mov	rbx, [r10+EXP_WORD_OFST]
-						; Get Exponent
+	mov	rbx, [r10+EXP_WORD_OFST]	; Get Exponent
 .loop15:
 	clc					; Clear CF for shift right
 	rcr	rax, 1				; Shift right until L.S.Bit is 1
@@ -439,51 +459,51 @@ FP_Short_Division:
 	mov	[r10+EXP_WORD_OFST], rbx
 						; Save ACC Exponent
 	mov	rbx, [r10+MAN_MSW_OFST]		; Store ACC M.S.Word in RBX for division (rest is zero)
-;
-; Add exponents, Clear ACC, and add exponent to cleared ACC
-
+	;
+	; Add exponents, Clear ACC, and add exponent to cleared ACC
+	;
 	mov	rax, [r11+EXP_WORD_OFST]	; get OPR Exponent
 	sub	rax, [r10+EXP_WORD_OFST]	; Subtract ACC Exponent
-	add	rax, 63
+	add	rax, 63				; Adjust for shifting right to LSBit
 	push	rax
 	mov	rsi, HAND_ACC			; Variable handle number
 	call	ClearVariable			; Clear ACC
 	pop	rax
 	mov	[r10+EXP_WORD_OFST], rax	; Restore Exponent
-;
-; Setup loop counter and index
-;
+	;
+	; Setup loop counter and index
+	;
 	mov	rcx, [No_Word]			; Loop Counter
 	mov	rbp, MAN_MSW_OFST		; Point index to M.S.Word
 	xor	rdx, rdx			; RDX Clear High 64 bit word for first time
-;
-; This is the main division loop  RAX = RDX:RAX/RBX,  remainder in RDX
-;
+	;
+	; This is the main division loop  RAX = RDX:RAX/RBX,  remainder in RDX
+	;
 .loop30:
 	mov	rax, [r11+rbp]			; Get word OPR in RAX
 	div	rbx				; RAX = RDX:RAX / RBX Remainder in RDX
 	mov	[r10+rbp], rax			; Add low word ACC
 	sub	rbp, BYTE_PER_WORD		; Point next word
 	loop	.loop30				; Decrement RCX, loop until done
-;
-; Normalize Result
-;
+	;
+	; Normalize Result
+	;
 	mov	rsi, HAND_ACC			; Point handle at ACC
 	call	FP_Normalize			; Normalize ACC
-;
-; Get original sign from memory variable
-;   and perform 2's compliment if negative
-;
+	;
+	; Get original sign from memory variable
+	;   and perform 2's compliment if negative
+	;
 
 	mov	rax, [DSIGN]			; Get sign
 	shl	rax, 1				; Shift sign bit to CF
 	jnc	.exit				; Negative? No skip
-;
+	;
 	mov	rsi, HAND_ACC			; Point handle at ACC
 	call	FP_TwosCompliment		; Form 2's compliment ACC
-;
-; Done! Restore registers and exit result in ACC
-;
+	;
+	; Done! Restore registers and exit result in ACC
+	;
 .exit:
 	pop	r11
 	pop	r10
@@ -495,7 +515,8 @@ FP_Short_Division:
 	pop	rbx
 	pop	rax
 	ret
-.MsgDivZero:	db	0xD, 0xA, "FP_Short_Divison: Error: Division by Zero", 0xD, 0xA, 0
+.MsgDivZero:
+	db	0xD, 0xA, "FP_Short_Divison: Error: Division by Zero", 0xD, 0xA, 0
 
 
 ;-----------------------------------------
@@ -512,7 +533,7 @@ FP_Short_Division:
 ;-----------------------------------------
 ;
 FP_Register_Division:
-; Preserve registers
+	; Preserve registers
 	push	rax				; General use
 	push	rbx				; Variable Address
 	push	rcx				; Loop Counting
@@ -521,15 +542,15 @@ FP_Register_Division:
 	push	rdi				; Variable handle number for function calls
 	push	rbp				; Variable offset address pointer
 	push	r10 				; Denominator (copyied input value)
-;
-; In case profiling, increment counter for short and long methods
-;
+	;
+	; In case profiling, increment counter for short and long methods
+	;
 %IFDEF PROFILE
 	inc	qword [iCntFPDivReg]
 %ENDIF
-;
-; Save input and check valid range
-;
+	;
+	; Save input and check valid range
+	;
 	mov	r10, rax			; get input value, save for DIV command
 	or	rax, rax			; Check for zero
 	jnz	.skip1
@@ -547,25 +568,25 @@ FP_Register_Division:
 	call	StrOut
 	mov	rax, 0
 	jmp	FatalError
-;
-; Setup pointers Address Pointers
-;
+	;
+	; Setup pointers Address Pointers
+	;
 .skip2:
 	mov	rbx, [RegAddTable+rsi*WSCALE]	; RSI (index) --> RBX (address)
-;
-; Check Numerator to determine sign of Quotent
-;
+	;
+	; Check Numerator to determine sign of Quotent
+	;
 	mov	rax, [rbx+MAN_MSW_OFST]		; Get sign of variable
 	mov	[DSIGN], rax			; Save sign for later
-;
-;Check sign, if negative then call two's compliment
-;
+	;
+	;Check sign, if negative then call two's compliment
+	;
 	rcl	rax, 1				; Rotate sign bit to CF
 	jnc	.skip3				; not negative
 	call	FP_TwosCompliment		; Using RSI handle, form 2's compliment
-;
-; Check for zero. If zero then return zero result
-;
+	;
+	; Check for zero. If zero then return zero result
+	;
 .skip3:
 	mov	rax, [rbx+MAN_MSW_OFST]		; Test M.S.Word for zero
 	or	rax, rax			; is it zero?
@@ -574,44 +595,44 @@ FP_Register_Division:
 	call	ClearVariable			; Clear variable, result is zero
 	jmp	.exit				; and exit result 0/x = 0
 .skip4:
-;
-; Calculate exponents
-;
+	;
+	; Calculate exponents
+	;
 	mov	rax, [rbx+EXP_WORD_OFST]	; get Exponent
 	add	rax, 0
 	mov	[rbx+EXP_WORD_OFST], rax	; Restore Exponent
-;
-; Setup loop counter and index
-;
+	;
+	; Setup loop counter and index
+	;
 	mov	rcx, [No_Word]			; Loop Counter
 	mov	rbp, MAN_MSW_OFST		; Point index to M.S.Word
 	xor	rdx, rdx			; RDX Clear High 64 bit word for first time
-;
-; This is the main division loop  RAX = RDX:RAX/RBX,  remainder in RDX
-;
+	;
+	; This is the main division loop  RAX = RDX:RAX/RBX,  remainder in RDX
+	;
 .loop30:
 	mov	rax, [rbx+rbp]			; Get word OPR in RAX
 	div	r10				; RAX = RDX:RAX / RBX Remainder in RDX
 	mov	[rbx+rbp], rax			; Add low word ACC
 	sub	rbp, BYTE_PER_WORD		; Point next word
 	loop	.loop30				; Decrement RCX, loop until done
-;
-; Normalize Result
-;
+	;
+	; Normalize Result
+	;
 	call	FP_Normalize			; Using RSI handle call Normalize
-;
-; Get original sign from memory variable
-;   and perform 2's compliment if negative
-;
+	;
+	; Get original sign from memory variable
+	;   and perform 2's compliment if negative
+	;
 
 	mov	rax, [DSIGN]			; Get sign
 	shl	rax, 1				; Shift sign bit to CF
 	jnc	.exit				; Negative? No skip
-;
+	;
 	call	FP_TwosCompliment		; Using RSI Form 2's compliment ACC
-;
-; Done! Restore registers and exit result in ACC
-;
+	;
+	; Done! Restore registers and exit result in ACC
+	;
 .exit:
 	pop	r10
 	pop	rbp
@@ -622,16 +643,16 @@ FP_Register_Division:
 	pop	rbx
 	pop	rax
 	ret
-.MsgDivZero:	db	0xD, 0xA, "FP_Register_Division: Error: Division by Zero", 0xD, 0xA, 0
-.MsgRange:	db	0xD, 0xA, "FP_Register_Division: Error: Zero expected in top two bits", 0xD, 0xA, 0
-
-
+.MsgDivZero:
+	db	0xD, 0xA, "FP_Register_Division: Error: Division by Zero", 0xD, 0xA, 0
+.MsgRange:
+	db	0xD, 0xA, "FP_Register_Division: Error: Zero expected in top two bits", 0xD, 0xA, 0
 
 
 ;------------------------------------------------
 ;
 ;  TO DO:  !!!  at low accuracy, check if variables cleared before increase accuracy
-;                   why some work and some done, junk left in low end of variables?
+;                    why some work and some done, junk left in low end of variables?
 ;          Fine tune accuracy real time
 ;          fix jump labels
 ;
@@ -643,6 +664,7 @@ FP_Register_Division:
 ;
 ;  Working Reg
 ;     ACC, WORKA, WORKB, WORKC
+;     if mmode 32 (0x20), FP_Reg7 destroyed.
 ;
 ;     Variable OPR not used so division can preserve
 ;
@@ -688,16 +710,16 @@ FP_Reciprocal:
 	push	r10				; Address pointer
 	push	r11				; Address pointer
 	push	r12				; Address pointer
-	push	r13				; Used in subroutine Sub_Reciprocal_Mult
-	push	r14				; Used in subroutine Sub_Reciprocal_Mult
-	push	r15				; Used in subroutine Sub_Reciprocal_Mult
+	push	r13				; Used in subroutine _Sub_Reciprocal_Mult
+	push	r14				; Used in subroutine _Sub_Reciprocal_Mult
+	push	r15				; Used in subroutine _Sub_Reciprocal_Mult
 ;
 %ifdef PROFILE
 	inc	qword [iCntFPRecip]		; If profiling, increment
 %endif
-;
-; Check for division by zero error
-;
+	;
+	; Check for division by zero error
+	;
 	mov	rax, WORD4000			; M.S.Bit is used as zero flag
 	test	[FP_Acc+MAN_MSW_OFST], rax	; Check Zero bit in MSW mantissa
 	jnz	.found_nonzero
@@ -706,9 +728,9 @@ FP_Reciprocal:
 	mov	rax, 0
 	jmp	FatalError
 .found_nonzero:
-;
-; Test sign bit and save for later
-;
+	;
+	; Test sign bit and save for later
+	;
 	mov	rax, 0
 	mov	[Recip_Sign], rax
 	mov	rax, [FP_Acc+MAN_MSW_OFST]	; Check sign bit in MSW mantissa
@@ -719,92 +741,52 @@ FP_Reciprocal:
 	mov	rsi, HAND_ACC
 	call	FP_TwosCompliment		; Make positive to do reciprocal
 .signbit_not_set:
-;
-; Just to be sure range 0.5-1 .0 normalize
-;
+	;
+	; Just to be sure range 0.5-1.0 normalize
+	;
 	mov	rsi, HAND_ACC
 	call	FP_Normalize
-;
-; Calculate new exponent
-;
+	;
+	; Calculate new exponent
+	;
 	mov	rax, 0x3F			; New exponent for fixed alignment
 	sub	rax, [FP_Acc+EXP_WORD_OFST]	; adjust for mantissa 0.5-1.0
 	mov	[Recip_Exp], rax		; Save for later
-;
-; Input Varaible in ACC is saved in WorkB and remains unchanged in WorkB
-;
+	;
+	; Input Varaible in ACC is saved in WorkB and remains unchanged in WorkB
+	;
 	mov	rsi, HAND_ACC
 	mov	rdi, HAND_WORKB
 	call	CopyVariable
-;
-; Align to fixed format
-;
+	;
+	; Align to fixed format
+	;
 	mov	rsi, HAND_WORKB
 	call	Right1Word
 	call	Left1Bit
-;
+	;
 	mov	rsi, HAND_ACC
 	call	ClearVariable
 	mov	rdi, HAND_WORKA
 	call	ClearVariable
 	mov	rdi, HAND_WORKC
 	call	ClearVariable
-;
-; Check for 1.00000 found in mantissa (skip was giving odd results, but may be fixed now)
-;
-	mov	rbx, FP_WorkB
-	mov	rbp, MAN_MSW_OFST
-	mov	rcx, [No_Word]
-;
-	mov	rax, [rbx+rbp]			; M.S.Word
-	or	rax, rax			;  zero?
-	jnz	.skip_10000
-	sub	rbp, BYTE_PER_WORD
-	dec	rcx
 
-           ; Ruler -->FEDCBA9876543210
-	mov	rax, 0x8000000000000000
-	cmp	[rbx+rbp], rax			; is it high word of one?
-	jne	.skip_10000
-	sub	rbp, BYTE_PER_WORD
-	dec	rcx
-.loop_ck_one:
-	mov	rax, [rbx+rbp]
-	or	rax, rax
-	jnz	.skip_10000
-	sub	rbp, BYTE_PER_WORD
-	loop	.loop_ck_one
-;
-; SPecial case mantissa is 1.000000....
-;
-  jmp .skip_10000 ; ***********************<<<<<<<<<<< Disabled
-
-	mov	rsi, HAND_WORKB
-	mov	rdi, HAND_ACC
-	call	CopyVariable
-
-	mov	rax, [Recip_Exp]
-	add	rax, 2
-	mov	[Recip_Exp], rax		; Adjust for not processing
-
-	jmp	.done
-
-.skip_10000:
-;
-; First guess 0.75
-;
+	;
+	; First guess 0.75
+	;
 	mov	rsi, HAND_WORKA
 	call	ClearVariable
-           ; Ruler -->FEDCBA9876543210
+		;   -->FEDCBA9876543210 Ruler
 	mov	rax, 0x0000000000000000
 	mov	[FP_WorkA+MAN_MSW_OFST], rax
 	mov	rax, 0xC000000000000000
 	mov	[FP_WorkA+MAN_MSW_OFST-BYTE_PER_WORD], rax
 	mov	rax, 0x3F
 	mov	[FP_WorkA+EXP_WORD_OFST], rax	; = 0.75
-;
-; Initialize variable accuracy
-;www
+	;
+	; Initialize variable accuracy
+	;
 	mov	rax, 8				; initial accuracy
 	mov	rbx, rax			; New value in RCX
 	cmp	rax, MINIMUM_WORD		; Below minimum ?
@@ -822,88 +804,44 @@ FP_Reciprocal:
 	sub	rax, rbx			; Subtract higest word+1 - number words
 	mov	[Recip_LSWOfst], rax		; Set LSW index
 
-;aaa1 * * * * override for debugging 2 places
+	; * * * * override for debugging 2 places
 	mov	rax, [MathMode]
 	test	rax, 0x10			; Force full accuracy?
-	jz	.skip_facc1			; No, leave reduced/variable accuracy
-;
+	jz	.skip_full_accuracy		; No, leave reduced/variable accuracy
+	;
 	mov	rax, [No_Word]			; Force full accuracy
 	mov	[Recip_No_Word], rax
 	mov	rax, [LSWOfst]
 	mov	[Recip_LSWOfst], rax
-.skip_facc1:
-;
-; initialize main loop counter
-;
+.skip_full_accuracy:
+	;
+	; initialize main loop counter
+	;
 	mov	r9, 0
-;------------------------------------------
-; Main iteration loop for making guesses
-;------------------------------------------
-;
-;  Two formula, 1, and 2
-;
-;  Formula 1:   Xn+1 = Xn(2-DXn)
-;
-%define FOxxxRMULA1
-%ifdef FORMULA1
-; ---- start clip formula -----
-.loop:
+.main_loop:
+	;------------------------------------------
+	; Main iteration loop for making guesses
+	;------------------------------------------
+	;
+	;  Formula :   Xn+1 = Xn + Xn(1-DXn)
+	;
+	; ---- start clip formula -----
 	mov	r10, FP_WorkB			; variable address
 	mov	r11, FP_WorkA			; variable address
 	mov	r12, FP_Acc			; Variable address
-	call	Sub_Reciprocal_Mult		; [r12] = [R11]*[R10]
-;
-; Load WorkC with properly aligned fixed point integer value 1
-;
-	mov	rsi, HAND_WORKC
-	call	ClearVariable
-	mov	rbx, FP_WorkC
-	mov	rbp, MAN_MSW_OFST
-	mov	rax, 2
-	mov	[rbx+rbp], rax			; Set WorkC = 2
-;
-;  Subtract WorkC = WorkC - ACC
-;
-	mov	rbx, FP_WorkC
-	mov	rdx, FP_Acc
-	mov	rbp, [Recip_LSWOfst]
-	mov	rcx, [Recip_No_Word]
-	clc
-	mov	r8, 0				; Temporarily hold CF
-.loop_sub2:					; Enter loop
-	mov	rax, [rbx+rbp]			; Get WorkC word
-	rcr	r8, 1				; Restore CF
-	sbb	rax, [rdx+rbp]			; Subtract ACC workd
-	rcl	r8, 1				; Save CF
-	mov	[rbx+rbp], rax			; Result WorkC = WorkC - ACC
-	add	rbp, BYTE_PER_WORD		; Increment pointer
-	loop	.loop_sub2			; Dec RCX and loop
-	mov	r10, FP_WorkA			; variable address
-	mov	r11, FP_WorkC			; variable address
-	mov	r12, FP_Acc			; Variable address
-	call	Sub_Reciprocal_Mult		; [R12] = [R11]*[R10]
-; ---- end clip formula -----
-%else
-;  Formula 2:   Xn+1 = Xn + Xn(1-DXn)
-;
-; ---- start clip formula -----
-.loop:
-	mov	r10, FP_WorkB			; variable address
-	mov	r11, FP_WorkA			; variable address
-	mov	r12, FP_Acc			; Variable address
-	call	Sub_Reciprocal_Mult		; [R12] = [R11]*[R10]
-;
-; Load WorkC with properly aligned fixed point integer value 1
-;
+	call	_Sub_Reciprocal_Mult		; [R12] = [R11]*[R10]
+	;
+	; Load WorkC with properly aligned fixed point integer value 1
+	;
 	mov	rsi, HAND_WORKC
 	call	ClearVariable
 	mov	rbx, FP_WorkC
 	mov	rbp, MAN_MSW_OFST
 	mov	rax, 1
 	mov	[rbx+rbp], rax			; Set WorkC = 1
-;
-;  Subtract WorkC = WorkC - ACC
-;
+	;
+	;  Subtract WorkC = WorkC - ACC
+	;
 	mov	rbx, FP_WorkC
 	mov	rdx, FP_Acc
 	mov	rbp, [Recip_LSWOfst]
@@ -918,17 +856,17 @@ FP_Reciprocal:
 	mov	[rbx+rbp], rax			; Result WorkC = WorkC - ACC
 	add	rbp, BYTE_PER_WORD		; Increment pointer
 	loop	.loop_sub2			; Dec RCX and loop
-;
-; If negative 2's compliment
-;
+	;
+	; If negative 2's compliment
+	;
 	mov	rsi, 0
 	mov	[Recip_2CF], rsi		; 2's compliment flag
 	rcl	rax, 1				; Get CF
 	jnc	.was_positive
-;
+	;
 	mov	rax, 1
 	mov	[Recip_2CF], rax		; 2's compliment flag
-;
+	;
 	mov	rbp, [Recip_LSWOfst]
 	mov	rcx, [Recip_No_Word]
 	clc
@@ -946,19 +884,19 @@ FP_Reciprocal:
 	mov	r10, FP_WorkA			; variable address
 	mov	r11, FP_WorkC			; variable address
 	mov	r12, FP_Acc			; Variable address
-	call	Sub_Reciprocal_Mult		; [R12] = [R11]*[R10]
-;
-;  ADD  ACC + WorkA = ACC
-;
+	call	_Sub_Reciprocal_Mult		; [R12] = [R11]*[R10]
+	;
+	;  ADD  ACC + WorkA = ACC
+	;
 	mov	rbx, FP_WorkA			; Source      WorkA
 	mov	rdx, FP_Acc			; Destination ACC
 	mov	rbp, [Recip_LSWOfst]		; Index
 	mov	rcx, [Recip_No_Word]		; Counter
 	clc
 	mov	r8, 0				; Temporarily hold CF
-;
-; Add or subtract depending on if 2's compliment was done
-;
+	;
+	; Add or subtract depending on if 2's compliment was done
+	;
 	mov	rax, [Recip_2CF]		; get flag
 	or	rax, rax
 	jz	.loop_add3			; do standard add
@@ -980,50 +918,31 @@ FP_Reciprocal:
 	add	rbp, BYTE_PER_WORD		; Increment pointer
 	loop	.loop_add3			; Dec RCX and loop
 .did_2s_com:
-;------------- clip formula 2 end -----------
 
-%endif
-;
-   	inc	r9				; counter
-; jmp	.done
-; Debug www
-	cmp	r9, 200
-	jl	.tempxxx
-	mov	rax, .dms1
-	call	StrOut
-	mov	rax, [Recip_No_Word]
-	call	PrintWordB10
-	call	CROut
-
-
-	mov	rax, .Msg_Error4
-	call	StrOut
-	mov	rax, 0
-	jmp	FatalError
-.dms1:	db	"Recip_No_Word: ", 0
-.tempxxx:
-;
-; Checking to see if it is done
-;
-;
-;  Skip first few iterations
-;
+	;
+   	inc	r9				; iteration counter
+	;
+	; Checking to see if it is done
+	;
+	;
+	;  Skip first few iterations
+	;
 	cmp	r9, 4				; Don't do first few terms, will false done
 	jl	.skip02
-;
-;  Setup address pointers to variables
-;
+	;
+	;  Setup address pointers to variables
+	;
 	mov	rbx, FP_Acc			; Next guess Xn
 	mov	rdx, FP_WorkA			; Last guess Xn-1
 	mov	rbp, MAN_MSW_OFST		; Point at MSWord
 	mov	rcx, 0				; Initialize word Counter
-;
-; loop checking if words match
-;
+	;
+	; loop checking if words match
+	;
 .loop_ck:
-;
-; This counts in rcx how many words match
-;www
+	;
+	; This counts in rcx how many words match
+	;
 	mov	rax, [rbx+rbp]			; Get word from ACC
 	cmp	rax, [rdx+rbp]			; Compare to WorkA
 	jne	.endloop			; Not equal, exit
@@ -1033,48 +952,37 @@ FP_Reciprocal:
 	cmp	rbp, rax			; Significant words in mantissa
 	jge	.loop_ck			; la
 .endloop:
-;
-; If at full accuracy, check for exit
-;
+	;
+	; If at full accuracy, check for exit
+	;
 	mov	rax, [No_Word]			; Get program accuracy
 	cmp	rax, [Recip_No_Word]		; Compare reduced accuracy
 	jne	.skip01				; Not full accuracy, don't exit
-;
-; Exit check, if matching enough word and if at full accuracy
-
+	;
+	; Exit check, if matching enough word and if at full accuracy
+	;
 	mov	rax, [No_Word]
 	sub	rax, GUARDWORDS
-;------------------------------------------------------------
-; Have set minimum 4 guard words configured in var_header.inc 14Dec14
-;------------------------------------------------------------
+	;------------------------------------------------------------
+	; Have set minimum 4 guard words configured in var_header.inc 14Dec14
+	;------------------------------------------------------------
 	add	rax, 1				; Include top guard word
 	cmp	rcx, rax
 	jl	.skip01			;
 
-; Debug always loop exit with R8 coutner
-; jmp .skip01
+	; Debug always loop exit with R8 coutner
+	; jmp .skip01
 
 	jmp	.done				; End calculation, all mantissa words equial while full accuracy
 .skip01:
 
-;
-;  RCX = count of the number of words that are the same
-;  Want accuracy to be double this. Each next calculation
-;  approximately doubles accuracy.
-;
-; Adjust accuracy, RCX = mumber of words the same
-;
-;aaa2
-  test qword[DebugFlag], 1
-  jz .notdebugprint
-  mov rax, rcx
-  call PrintWordB10
-  mov al, ' '
-  call CharOut
-  mov rax, [Recip_No_Word]
-  call PrintWordB10
-  call CROut
-.notdebugprint:
+	;
+	;  RCX = count of the number of words that are the same
+	;  Want accuracy to be double this. Each next calculation
+	;  approximately doubles accuracy.
+	;
+	; Adjust accuracy, RCX = mumber of words the same
+	;
 
 	mov	rax, rcx			; Get number bytes the same
 	mov	rdx, 0				; For x86 MUL command
@@ -1085,9 +993,9 @@ FP_Reciprocal:
 	mov	rbx, rax			; New proposed accuracy
 	cmp	rbx, [Recip_No_Word]		; Check if less, happens sometimes
 	jle	.skip02				; Don't decrease, only increase or same
-;
-; Set point exceeded, double accuracy
-;
+	;
+	; Set point exceeded, double accuracy
+	;
 	mov	rax, [No_Word]			; Maximum mantissa size
 	cmp	rax, rbx			; Over maximum size?
 	jge	.skip_sa2			; No don't adjust
@@ -1099,11 +1007,11 @@ FP_Reciprocal:
 	sub	rax, rbx			; Subtract higest word+1 - number words
 	mov	[Recip_LSWOfst], rax		; Set LSW index
 
-;aaa3 * * * * override for debugging (2 places)
+	;aaa3 * * * * override for debugging (2 places)
 	mov	rax, [MathMode]
 	test	rax, 0x10			; Force full accuracy?
 	jz	.skip_facc2			; No, leave reduced/variable accuracy
-;
+	;
 	mov	rax, [No_Word]			; Force full accuracy
 	mov	[Recip_No_Word], rax
 	mov	rax, [LSWOfst]
@@ -1111,27 +1019,26 @@ FP_Reciprocal:
 .skip_facc2:
 .skip02:
 
-;
-;  Keep going, ACC becomes new guess
-;
+	;
+	;  Keep going, ACC becomes new guess
+	;
 	mov	rsi, HAND_ACC
 	mov	rdi, HAND_WORKA			; make next guess
 	call	CopyVariable
 
-  	jmp	.loop
-;
-;------------------------
-;  Exit to loop here
-;------------------------
+  	jmp	.main_loop
+	;
+	;------------------------
+	;  Exit to loop here
+	;------------------------
 .done:
 
 	mov	rax, [Recip_Exp]		; Get Exponent
 	mov	[FP_Acc+EXP_WORD_OFST], rax
 	 					; Restore Exponent
-;
 	mov	rsi, HAND_ACC
 	call	FP_Normalize
-;
+	;
 	mov	rax, [Recip_Sign]		; Get sign
 	or	rax, rax			; Was sign flag set?
 	jz	.exit
@@ -1162,7 +1069,7 @@ FP_Reciprocal:
 ;
 ;   Subroutine to FP_Reciprocal
 ;
-;   DO NOT call THIS FROM OTHER FUNTIONS
+;   DO NOT call THIS FROM OTHER FUNCTIONS
 ;   Registers not preserved, non-standard word alignment
 ;
 ;   Derived from Math_Word_Multiplication (see for more info)
@@ -1266,27 +1173,28 @@ FP_Reciprocal:
 ;
 ;
 ;-----------------------------------------------
-Sub_Reciprocal_Mult:
+_Sub_Reciprocal_Mult:
 ;
 %ifdef PROFILE
 	inc	qword [iCntFPRecipMul]		; If profiling, increment
 %endif
-;
-;----------------------------------------------------
-;;;  Alternate multiplication using bit-wise method
-;
-	mov	rax, [MathMode]
-	test	rax, 32
+	;
+	;----------------------------------------------------
+	;;;  Alternate multiplication using bit-wise method
+	;    Warning, bitwise destroys FP_Reg7
+	;
+	mov	rax, [MathMode]			; Get current value of mmode
+	test	rax, 32				; Bit 0x20 = FP_Reciprocal: bitwise multiplication
 	jz	.skip_bitwise
-	jmp	Sub_Long_Reciprocal_Mult
-;----------------------------------------------------
-;
+	jmp	_Sub_Long_Reciprocal_Mult
+	;----------------------------------------------------
+	;
 .skip_bitwise:
 
 	push	r9				; Parent routine loop counter (Preserve)
-;
-; Clear output variable
-;
+	;
+	; Clear output variable
+	;
 	mov	rax, 0
 	mov	[r12+EXP_WORD_OFST], rax	; Clear exponent word
 	mov	rbp, MAN_MSW_OFST		; Index to mantissa
@@ -1295,14 +1203,14 @@ Sub_Reciprocal_Mult:
 	mov	[r12+rbp], rax			; Clear word
 	sub	rbp, BYTE_PER_WORD
 	loop	.loopclr			; Dec RCX and loop
-;
-; Setup RSI to index input words (operand #1) for multiplicatioon
-;
+	;
+	; Setup RSI to index input words (operand #1) for multiplicatioon
+	;
 	mov	rsi, [Recip_LSWOfst]		; Index for Loop-1
 	mov	r15, MAN_MSW_OFST		; Used to initialize Loop-2 Index
 	mov	r8, 0				; Holds carry flag during addition
 
-%define DIxxxVTRACE
+%define DIxxxxVTRACE
 ;---------------
 ;  L O O P - 1
 ;---------------
@@ -1322,9 +1230,9 @@ Sub_Reciprocal_Mult:
 %endif
 ; - - - - - - - - - - - -
 
-;
-; Setup RDI to index input words (operand #2) for multiplicatioon
-;
+	;
+	; Setup RDI to index input words (operand #2) for multiplicatioon
+	;
 	mov	rdi, r15			; Index for Loop-2
 	mov	r14, [Recip_LSWOfst]		; To initialize Loop-3
 ;
@@ -1332,9 +1240,9 @@ Sub_Reciprocal_Mult:
 ;  L O O P - 2
 ;---------------
 .mult_loop_2:
-;
-; Initialize rbp index to store output (product) of multiplication
-;
+	;
+	; Initialize rbp index to store output (product) of multiplication
+	;
 	mov	rbp, r14			; Used for save pointer and also
 ;
 ; - - - T R A C E - - - -
@@ -1351,19 +1259,19 @@ Sub_Reciprocal_Mult:
 %endif
 ; - - - - - - - - - - - -
 						; used to initialize Loop-3
-;
-; Perform X86 Multiplication RAX * RBX = RDX:RAX
-;mmm
+	;
+	; Perform X86 Multiplication RAX * RBX = RDX:RAX
+	;
 	mov	rbx, [r10+rsi]
 	mov	rax, [r11+rdi]
 	mov	rdx, 0
 	mul	rbx				; Multiply RAX * RBX = RDX:RAX
-;
-;  Save Result of multiplication
-;
-;
-;  Add Low Word to Result [R12] from RBP variable handle
-;
+	;
+	;  Save Result of multiplication
+	;
+	;
+	;  Add Low Word to Result [R12] from RBP variable handle
+	;
 	mov	r8, 0				; Clear previous carry flags
 	add	[r12+rbp], rax			; Add L.W.Word of mult to result
 	rcl	r8, 1				; Save CF
@@ -1381,17 +1289,17 @@ Sub_Reciprocal_Mult:
 %endif
 ; - - - - - - - - - - - -
 
-;
-; Increment index to high word
-;
+	;
+	; Increment index to high word
+	;
 	add	rbp, BYTE_PER_WORD 		; Increment index to next word
 	cmp	rbp, (MAN_MSW_OFST+BYTE_PER_WORD)
 	jl	.not_out_range1			; Skip if above top word (should have zero data)
 	or	rdx, rdx			; Throwaway nonzero?
 	jz	.exit_loop_3			; This is expected, skip and move on
-;
-; Error, overflow word non zero
-;
+	;
+	; Error, overflow word non zero
+	;
 	mov	al, ' '				; Else ... Fatal Error
 	call	CharOut
 	mov	rax, rdx
@@ -1402,11 +1310,11 @@ Sub_Reciprocal_Mult:
 	call	StrOut
 	mov	rax, 0
 	jmp	FatalError
-;
+	;
 .not_out_range1:
-;
-; Add high word result from MUL
-;
+	;
+	; Add high word result from MUL
+	;
 	rcr	r8, 1				; Restore CF from low word
 	adc	[r12+rbp], rdx			; Add CF and MSW of multiplication
 	rcl	r8, 1				; Save CF
@@ -1430,10 +1338,10 @@ Sub_Reciprocal_Mult:
 ;  L O O P - 3
 ;---------------
 .mult_loop_3:
-;
-; Loop 3 is to add carry flag to higher words
-;
-;
+	;
+	; Loop 3 is to add carry flag to higher words
+	;
+	;
 	test	r8, 1				; see if carry flag
 %ifndef DIVTRACE
 	jz	.exit_loop_3			; no carry to add, exit loop
@@ -1470,17 +1378,17 @@ Sub_Reciprocal_Mult:
 %ENDIF
 ; - - - - - - - - - - - -
 
-;
-;  Loop until add of carry not needed
-;
+	;
+	;  Loop until add of carry not needed
+	;
 	jmp	.mult_loop_3
 ;---------------
 ;  E N D - 3
 ;---------------
 .exit_loop_3:
-;
-; Increment/Decrement index, check done, else loop
-;
+	;
+	; Increment/Decrement index, check done, else loop
+	;
 	add	r14, BYTE_PER_WORD
 	add	rdi, BYTE_PER_WORD
 	cmp	rdi, (MAN_MSW_OFST+BYTE_PER_WORD)
@@ -1488,9 +1396,9 @@ Sub_Reciprocal_Mult:
 ;---------------
 ;  E N D - 2
 ;---------------
-;
-; Increment/Decrement index, check done, else loop
-;
+	;
+	; Increment/Decrement index, check done, else loop
+	;
 	sub	r15, BYTE_PER_WORD		; For RDI
 	add	rsi, BYTE_PER_WORD
 	cmp	rsi, (MAN_MSW_OFST+BYTE_PER_WORD)
@@ -1503,21 +1411,33 @@ Sub_Reciprocal_Mult:
 .exit:
 	pop	r9
 	ret
-.Msg_Error1:	db	"FIX_Reciprocal_Mult: RAX non-zero", 0xD, 0xA, 0
-.Msg_Error2:	db	"FIX_Reciprocal_Mult: Error, loop-3 expect CF = 0 but was set", 0xD, 0xA, 0
+.Msg_Error1:
+	db	"FIX_Reciprocal_Mult: RAX non-zero", 0xD, 0xA, 0
+.Msg_Error2:
+	db	"FIX_Reciprocal_Mult: Error, loop-3 expect CF = 0 but was set", 0xD, 0xA, 0
 
 ;------------------------------------------------------------------------------------
-;           Recip_LSWOfst - pointer to LSWord (uses variable accuracy)
-;           Recip_No_Word - number words in mantissa (uses variable accuracy)
+;
+;  This is a bitwise multiplication used only in reciprocal calculation
+;
+;  Recip_LSWOfst - pointer to LSWord (uses variable accuracy)
+;  Recip_No_Word - number words in mantissa (uses variable accuracy)
+;
+;  [R12] = [R10] * [R11] with [R10] and [R11] preserved
+;
+;
+;                         W A R N I N G
+;
+;  if mmode bit 32 x020, then Bitwise multiplication destroys FP_Reg7
+;
+;  TODO don't destroy FP_Reg7
+;
+;------------------------------------------------------------------------------------
 
-; [R12] = [R10] * [R11] with [R10] and [R11] preserved
-;
-; Uses FP_Opr as working variable
-
-Sub_Long_Reciprocal_Mult:
-;
-; Preserve registers
-;
+_Sub_Long_Reciprocal_Mult:
+	;
+	; Preserve registers
+	;
 	push	rax				; Working Reg
 	push	rbx				; Used for 64 bit multiplication i85 MUL
 	push	rcx				; Loop Counter
@@ -1526,179 +1446,153 @@ Sub_Long_Reciprocal_Mult:
 	push	rdi				; Operand 2 Variable Handle number
 	push	rbp				; Pointer Index
 	push	r8				; Working Reg
-	push	r9				; WOrking Reg
+	push	r9				; Working Reg
 	push	r10				; Variable address assigned by calling program
 	push	r11				; Variable address assigned by calling program
 	push	r12				; Variable address assigned by calling program
-	push	r13				; Pointer to FP_Opr as temp variable
+	push	r13				; Pointer to FP_Reg7 as temp variable
 
-;mov al, 'M'
-;Call CharOut
-;
-; FP_Opr used as working variable pointed to by R13
-;
-	mov	r13, FP_Opr			; Point R13 at FP_Opr
-	mov	r13, FP_Reg5			; Point R13 at FP_Opr
-;
-; Copy [R10] Variable into [r13]
-;
+	; ---------------
+	; W A R N I N G    FP_Reg7 used as working variable pointed to by R13 (Contents Destroyed)
+	;----------------
+	mov	r13, FP_Reg7			; Point R13 at FP_Reg7
+	;
+	; Copy [R10] Variable into [r13]
+	;
 	mov	rbp, EXP_MSW_OFST		; RBX point at most significant Word
 	mov	rcx, [Recip_No_Word]		; Current size of mantissa
 	add	rcx, EXP_WSIZE			; Bytes in exponent
- .loop1ab:
+ .loop10:
 	mov	rax, [r10+rbp]			; Read Word
 	mov	[r13+rbp], rax			; Write Word
 	sub	rbp, BYTE_PER_WORD		; Increment Address
-	loop	.loop1ab			; Decrement RCX counter and loop
-;
-; Clear [R12] variable
-;
+	loop	.loop10				; Decrement RCX counter and loop
+	;
+	; Clear [R12] variable
+	;
 	mov	rbp, EXP_MSW_OFST		; RBX point at most significant Word
 	mov	rcx, [Recip_No_Word]		; Current size of mantissa
 	add	rcx, EXP_WSIZE			; Bytes in exponent
 	xor	rax, rax				; Clear RAX = 0
- .loop1ac:
+ .loop20:
 	mov	[r12+rbp], rax			; Write Word
 	sub	rbp, BYTE_PER_WORD		; Increment Address
-	loop	.loop1ac			; Decrement RCX counter and loop
-;
-; Calculate number of bits in mantissa
-;
+	loop	.loop20				; Decrement RCX counter and loop
+	;
+	; Calculate number of bits in mantissa
+	;
 	mov	r8, [Recip_No_Word]		; Get number of types in Mantissa
 	shl	r8, 6				; X2, X4, X8, x16, x32, x64 for 64 bit/word
 	sub	r8, 1				; Adjust for sign bit
 
-;  Loop to shift both [R12] and OPR in [R13] to right 1 bit at a time
-;  If a non-zero bit is shifted out of least significant bit
-;  then add the [R10] mantissa to the [R12] mantissa.
-;  Continue until all bits are shifted (Shift count in R8 is zero.
-;
+	;  Loop to shift both [R12] and [R13] to right 1 bit at a time
+	;  If a non-zero bit is shifted out of least significant bit
+	;  then add the [R10] mantissa to the [R12] mantissa.
+	;  Continue until all bits are shifted (Shift count in R8 is zero).
+	;
 
-; mov rax, [LSWOfst]
-; Call PrintHexWord
-; mov al, ' '
-; mov rax, [Recip_LSWOfst]
-; Call PrintHexWord
-; mov al, ' '
-; mov rax, [Recip_No_Word]
-; Call PrintHexWord
-; mov al, ' '
-; mov rax, [No_Word]
-; Call PrintHexWord
-; mov al, ' '
-; call CharOut
-
-
-.loop60:
-
+.main_loop:
 	mov	rbp, [Recip_LSWOfst]		; pointer to LS Word (use LS Bit later)
-	mov	r9, [r13+rbp]			; Get L.S. Word WorkA
-;
-; Rotate [R13] FP_Opr right 1 bit
-;
+	mov	r9, [r13+rbp]			; Get L.S. Word [r13]
+	;
+	; Rotate [R13] right 1 bit
+	;
 	mov	rbp, MAN_MSW_OFST		; RBP point at most significant Word
 	mov	rcx, [Recip_No_Word]		; Current size of mantissa
 ;
 	clc					; Clear Carry before addition
-.loop1dc:
+.loop30:
 	rcr	qword[r13+rbp], 1		; Rotate right 1 bit, CF --> word --> CF
 	rcl	rax, 1				; Save CF
 	sub	rbp, BYTE_PER_WORD		; RBX decrement to next word
 	rcr	rax, 1				; Restore CF
-	loop	.loop1dc
-;
-; Rotate [R12] right 1 bit
-;
+	loop	.loop30
+	;
+	; Rotate [R12] right 1 bit
+	;
 	mov	rbp, MAN_MSW_OFST		; RBX point at most significant Word
 	mov	rcx, [Recip_No_Word]		; Current size of mantissa
 	clc					; Clear Carry before addition
-.loop1bb:
+.loop40:
 	rcr	qword[r12+rbp], 1		; Rotate right 1 bit, CF --> word --> CF
 	rcl	rax, 1				; Save CF
 	sub	rbp, BYTE_PER_WORD		; RBX decrement to next word
 	rcr	rax, 1				; Restore CF
-	loop	.loop1bb
-; mov rax, [r13+MAN_MSW_OFST-8]
-; Call PrintHexWord
-; mov al, ' '
-; call CharOut
+	loop	.loop40
 
 	test	r9, 1				; Was 1 rotated out of WorkA?
-	jz	.skip65				; No, it was zero, skip add mantissa
-;
-; Add [r12] = [r12] + [r11]
-;
+	jz	.skip60				; No, it was zero, skip add mantissa
+	;
+	; Add [r12] = [r12] + [r11]
+	;
 	mov	rbp, [Recip_LSWOfst]		; RBX point at most significant Word
 	mov	rcx, [Recip_No_Word]		; Current size of mantissa
 	clc					; Clear Carry before addition
-.loop1wc:
-;pushF
-;mov al, 'Z'
-;Call CharOut
-;popF
+
+.loop50:
 	mov	rax, [r12+rbp]			; Read Word
 	adc	rax, [r11+rbp]			; Add (64 bit) with carry
 	mov	[r12+rbp], rax			; Write Word
 	rcl	rax, 1				; Save CF
 	add	rbp, BYTE_PER_WORD		; Increment Address
 	rcr	rax, 1				; Restore CF
-	loop	.loop1wc			; Decrement RCX counter and loop
+	loop	.loop50				; Decrement RCX counter and loop
 ;
 ; Loop counters
 ;
-.skip65:
+.skip60:
 	dec	r8				; Decrement bit counter
 	or	r8, r8				; All bits zero?
 	jz	.done				; All bits zerom, stop
-	jmp	.loop60
-;
-;   Done! Restore registers and exit
-;
+	jmp	.main_loop
+	;
+	;   Done! Restore registers and exit
+	;
 .done:
-;
-; This multiplication is performed solely on the mantissa.
-; However, the matrix multiplication assumes some exponent
-; processing inherent to the method. THe following will shift
-; the mantissa 62 bits left (1 word - 2 bits).
-;
-; Rotate [R12] left 1 word
-;
+	;
+	; This multiplication is performed solely on the mantissa.
+	; However, the matrix multiplication assumes some exponent
+	; processing inherent to the method. The following will shift
+	; the mantissa 62 bits left (1 word - 2 bits).
+	;
+	; Rotate [R12] left 1 word
+	;
 	mov	rbp, EXP_MSW_OFST		; RBX point at one above MS word
 	mov	rcx, [Recip_No_Word]		; initialize counter
 
 	clc					; Clear Carry before addition
-.loop1bq:
-	mov	rax, [r12+rbp-BYTE_PER_WORD]	; get word at [R12 - 1word]
+.loop70:
+	mov	rax, [r12+rbp-BYTE_PER_WORD]	; get word at [R12 - 1 word]
 	mov	[r12+rbp], rax			; store in [R12]
 	sub	rbp, BYTE_PER_WORD		; RBX decrement to next word
-	loop	.loop1bq
+	loop	.loop70
 
 	mov	rax, 0				; clear LS Word
 	mov	[r12+rbp], rax
-;
-; Rotate [R12] right 1 bit
-;
+	;
+	; Rotate [R12] right 1 bit
+	;
 	mov	rbp, MAN_MSW_OFST		; RBX point at most significant Word
 	mov	rcx, [Recip_No_Word]		; Current size of mantissa
 	clc					; Clear Carry before addition
-.loop1bj:
+.loop80:
 	rcr	qword[r12+rbp], 1		; Rotate right 1 bit, CF --> word --> CF
 	rcl	rax, 1				; Save CF
 	sub	rbp, BYTE_PER_WORD		; RBX decrement to next word
 	rcr	rax, 1				; Restore CF
-	loop	.loop1bj
-;
-; Rotate [R12] right 1 bit
-;
+	loop	.loop80
+	;
+	; Rotate [R12] right 1 bit
+	;
 	mov	rbp, MAN_MSW_OFST		; RBX point at most significant Word
 	mov	rcx, [Recip_No_Word]		; Current size of mantissa
 	clc					; Clear Carry before addition
-.loop1bk:
+.loop90:
 	rcr	qword[r12+rbp], 1		; Rotate right 1 bit, CF --> word --> CF
 	rcl	rax, 1				; Save CF
 	sub	rbp, BYTE_PER_WORD		; RBX decrement to next word
 	rcr	rax, 1				; Restore CF
-	loop	.loop1bk
+	loop	.loop90
 
 .exit:
 	pop	r13
@@ -1714,10 +1608,7 @@ Sub_Long_Reciprocal_Mult:
 	pop	rcx
 	pop	rbx
 	pop	rax
-;  jmp ParseCmd
 	ret
-
-
 
 ;------------------------
 ;  EOF math-div.asm
