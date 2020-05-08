@@ -404,7 +404,7 @@ FP_Normalize:
 ;===========================================
 ; bitwise operation for benchmark testing
 	mov	rax, [MathMode]			; check if bitwise rotation requested
-	test	rax, 0x080
+	test	rax, 0x080			; 0x80 = FP_Normalization: Force bitwise alignment
 	jz	.not_long_mode
 	jmp	FP_Long_Normalize_pushed
 ;===========================================
@@ -559,37 +559,55 @@ FP_Long_Normalize:
 ; Alternate entry with registers pushed from FP_Normalize above
 FP_Long_Normalize_pushed:
 
-;  Address Pinters
+	;  Address Pointers
 	mov	rbx, [RegAddTable+rsi*WSCALE]	; RSI (index) --> RBX (address)
 	mov	rbp, MAN_MSW_OFST		; Point to M.S.Word
-;
-;  Perform 2's compliment if negative
-;  normalization requires positive number
-;
+	;
+	;  Perform 2's compliment if negative
+	;  normalization requires positive number
+	;
 	mov	r8, [rbx+rbp]			; Save sign flag in R8 for later
 	mov	rax, r8				; Sign flag (M.S.Word)
 	rcl	rax, 1				; Rotate sign bit into CF
-	jnc	.skip1				; CF=0, positive skip 2's compliment
+	jnc	.number_is_positive		; CF=0, positive skip 2's compliment
 	call	FP_TwosCompliment		; 2'S compliment of variable
+.number_is_positive:
+	;
+	; Check of mantissa is negative before rotating bits
+	;
+	mov	rbp, [LSWOfst]			; Offset to L.S. Word
+	mov	rcx, [No_Word]			; Loop Counter for words in mantissa
+.loop10:
+	mov	rax, [rbx+rbp]			; Get Byte to test
+	or	rax, rax			; Is it zero?
+	jnz	.found_non_zero			; No, don't need to check any more
+	add	rbp, BYTE_PER_WORD		; Point next word
+	loop	.loop10				; Dec RCX and loop until RCX = 0
+	;
+	; All mantissa words are zero, clear exponent and exit
+	;
+	mov	qword[rbx+EXP_WORD_OFST], 0	; Clear Exponent
+        jmp	short .exit			; And exit
 ;
 ;  Rotate bits left until MSBit is non-zero, while adjusting exponent
 ;
-.skip1:
+.found_non_zero:
 	test	byte[rbx+MAN_MSB_OFST], 0x80	; is M.S.Byte  1xxxxxxx ?
-	jz	.loop5				; No, don't need rotate right
+	jz	.loop20				; No, don't need rotate right
 	call	Right1BitAdjExp			; Else rotate 1 bit right
 	mov	al, [rbx+MAN_MSB_OFST]		; Right1Bit will left justify sign bit
 	and	al, 0x7F			; So it must be cleared
 	mov	[rbx+MAN_MSB_OFST], al		; And move it back to M.S.Byte mantissa
-.loop5:
+.loop20:
 	test	byte[rbx+MAN_MSB_OFST], 0x40	; is M.S.Byte  010000xxx ?
-	jnz	.skip6				; Yes, done rotating
+	jnz	.done_rotating			; Yes, done rotating
 	call	Left1BitAdjExp			; Rotate to left and adjust exponent
-	jmp	short .loop5			; Always taken (careful about infinit loop)
-.skip6:
+	jmp	short .loop20			; Always taken (assumes checked for zero previously)
+.done_rotating:
 	rcl	r8, 1				; Rotate sign bit into CF
 	jnc	.exit				; no, exit
 	call	FP_TwosCompliment		; Two's compliment
+
 .exit:
 ; Restore Registers
 	pop	r9
