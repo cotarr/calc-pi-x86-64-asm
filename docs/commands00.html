@@ -221,13 +221,13 @@
             <td></td>
             <td>
               Print Xreg to console output without formatting.
-              The base-10 conversion mode is set independantly
+              The base-10 conversion mode is set independently
               using commands: fix, int, or sci.
               The period character "." is synonymous to "print".<br><br>
               Adding "f" to print command will format
               the text output stream in groups of 10 digits, with
               100 digits per line, in blocks of 1000 digits.
-              Formatting is independant of the base-10 conversion
+              Formatting is independent of the base-10 conversion
               mode set with: fix, int, or sci.
               Use "help print" to see more options.
             </td>
@@ -434,8 +434,8 @@
           The program will accept floating point input. At the "Op Code:" prompt,
           enter a numeric text string. Use the keyboard [Enter] key to terminate the input.
           The input be converted to a binary floating point.
-          White space is ignoreed within the number.<br><br>
-          Example suntax:<br>0 <br>0.0 <br>
+          White space is ignored within the number.<br><br>
+          Example syntax:<br>0 <br>0.0 <br>
           123 <br>+123 <br>-123 <br>123.456 <br>12e45 <br>-12.34e-4 <br>12.34E+2322<br>-12.34 E +232<br><br>
           For example:
         </p>
@@ -483,7 +483,7 @@ sci  +1.230000000000000000000000000000000000000000000000000000000000 E+2
           The process of the base-10 conversion produces a continuous stream of ascii
           characters. Unformatted text will "wrap" to the next line when the screen width of the
           console terminal is reached. It is very difficult to work with unformatted
-          numbers. Formatting requries adding ascii space characters and
+          numbers. Formatting requires adding ascii space characters and
           end of line characters. Formatting is configured by adding modifier characters
           to the end of the "print" or "." commands. The one you would use most
           would be "f" to request that text be formatted in group of 10 digits,
@@ -501,7 +501,7 @@ print f   +3.1415926535 8979323846 2643383279 5028841971 6939937510 5820974944
         <p>
           Significant digits:<br><br>
 
-          In the case of any repetitive calculaton that runs in a loop,
+          In the case of any repetitive calculation that runs in a loop,
           each operation in the loop may experience round off errors.
           Over many loops, these cumulative errors can add up.
           Additionally, the variables are allocated in 64 bit words. The intended number of decimal
@@ -514,11 +514,11 @@ print f   +3.1415926535 8979323846 2643383279 5028841971 6939937510 5820974944
           of 3's looking like "0.3333...".
           However at some point the number may inherit various accuracy errors and look something like
           "0.33333328342". In this case 6 digits were accurate followed by 5 random digits.
-          The sigfigs or sf comand will set the intended accuracy variable size and number of
+          The sigfigs or sf command will set the intended accuracy variable size and number of
           base-10 digits to print. Extra 64 bit words are allocated, called "guard words".
           Adding "e" followed by an integer to the sigfigs or sf command will allow
           extended digits to be included in the "print" or "." commands. Extended
-          digits beyong the specified accuracy are shown in parentheses.
+          digits beyond the specified accuracy are shown in parentheses.
         </p>
         <p>
           Example:<br>

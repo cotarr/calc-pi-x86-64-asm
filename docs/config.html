@@ -45,7 +45,7 @@
         </div>
         <p>
           System memory used for floating point number variables are defined in math.asm
-          using RESQ statements to declare unitialized blocks of memory in the BSS section.
+          using RESQ statements to declare uninitialized blocks of memory in the BSS section.
           These are statically allocated when the program is started as part of the load image.
           The maximum size of the floating point variables can be configured
           in "var_header.inc". As shown below, the default variable size
@@ -80,7 +80,7 @@ VAR_WSIZE  equ 0x0200000 ;Size of variable in words (~40 MDigits)      &lt;-- De
           routines bitwise rotations combined with addition and subtraction.
           However, this method is extremely slow. In order to increase speed,
           alternate multiplication and division routines can use the 64 bit microprocessor
-          MUL and DIV instruction to work with 128 bit / 64 bit integer operaitons.
+          MUL and DIV instruction to work with 128 bit / 64 bit integer operations.
         </p>
         <p>
           The "mmode" command is used to set or view a series of flags
@@ -99,7 +99,7 @@ VAR_WSIZE  equ 0x0200000 ;Size of variable in words (~40 MDigits)      &lt;-- De
 <pre class="pre-command">
 Usage: mmode &lt;optional integer bit pattern&gt;
 
-Descripton: Without argument, mmode displays MathMode variable.
+Description: Without argument, mmode displays MathMode variable.
 Using mmode with argument will load the integer argument into
 the MathMode variable.
 

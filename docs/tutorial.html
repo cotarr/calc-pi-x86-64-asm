@@ -91,17 +91,17 @@ TREG   0.0
         </p>
         <p>
           Number input is completed by pressing the keyboard Enter key.
-          Input<in> 4 </in>will push the value 4 into the X register.
-          Input<in> 5 </in> will first roll the stack moving 4 from X to Y,
+          Entering<in> 4 </in>will push the value 4 into the X register.
+          Entering<in> 5 </in> will first roll the stack moving 4 from X to Y,
           then the value of X will be set to 5.
           You can see the contents of the stack printed after each entry.
           Math operators like + - * / operate on X and Y registers.
-          Input<in> * </in> to execute the multiply command multiplying X = X * Y.
+          Entering<in> * </in> to execute the multiply command multiplying X = X * Y.
           You can see 20 in X register.
           Note: the stack rolls down, leaving 0 in Y, Z and T registers.
-          Input<in> 2 </in> will rotate X to Y leaving 20 in Y,
+          Entering<in> 2 </in> will rotate X to Y leaving 20 in Y,
           and 2 is placed in the X register.
-          Input <in> / </in> to call the division
+          Entering <in> / </in> to call the division
           routine to calculate Y / X, rolling the stack and leaving 10 in
           the X register.
         </p>
@@ -162,11 +162,11 @@ TREG   0
           The command to calculate pi is "c.pi".
           You will notice program output is still set to "int" mode
           and the X register still contains "10" from the last example
-          Input<in> clrall </in> will clear all the calculator registers.
+          Entering<in> clrall </in> will clear all the calculator registers.
           Prior to running the calculation, we will configure the variable size
-          to allow 500 digits (base-10) by input<in> sigfigs 500 </in>.
-          The sub-program to calculate pi can be started by input<in> c.pi </in>.
-          The result will then be printed by input<in> print </in>.
+          to allow 500 digits (base-10) by entering<in> sigfigs 500 </in>.
+          The sub-program to calculate pi can be started by entering<in> c.pi </in>.
+          The result will then be printed by entering<in> print </in>.
         </p>
 
 <pre class='pre-tutorial'>
@@ -218,8 +218,8 @@ TREG   0
           it is necessary to convert the binary numbers (base-2) to
           recognizable (base-10) format. The base-10 conversion can be
           set to 3 modes: fix, int or sci. The program is currently in "int" mode.
-          Change the base-10 conversion to scientific notation by input <in> sci </in> and
-          then print the result again with input<in> print </in> command.
+          Change the base-10 conversion to scientific notation by entering <in> sci </in> and
+          then print the result again by entering<in> print </in> command.
         </p>
 
 <pre class='pre-tutorial'>
@@ -243,9 +243,9 @@ TREG   0.0
 </pre>
       <p>
         You will notice the exponent value " E+0" is printed both on the abbreviated stack output
-        and in resposne to the print command. Next set the base-10 conversion to fix mode by
-        input<in> fix </in>. We will print the result again, but this time we will use the alternate
-        print command, the period character ".", by input<in> . </in> to print the result.
+        and in response to the print command. Next set the base-10 conversion to fix mode by
+        entering<in> fix </in>. We will print the result again, but this time we will use the alternate
+        print command, the period character ".", by entering<in> . </in> to print the result.
       </p>
 
 <pre class='pre-tutorial'>
@@ -301,7 +301,7 @@ TREG   0.0
           The print command will accept a modifier. The letter "f" will specify text format
           with number characters in groups of 10 characters separated by a space. These
           will be set in lines of 100 characters, and for larger numbers, in blocks of 1000 characters.
-          Repeat the print command using the period character, but append "f" by input<in> . f </in> to
+          Repeat the print command using the period character, but append "f" by entering<in> . f </in> to
           print formatted output.
         </p>
 
@@ -349,11 +349,11 @@ TREG   0.0
           abbreviated version of the "sigfigs" command "sf", we will start with 10000
           digits and work our way up.
           <br><br>
-          Input<in> sf 10000 </in> and input<in> c.e </in>.<br>
-          Input<in> sf 100000 </in> and input<in> c.e </in>.<br>
-          Input<in> sf 200000 </in> and input<in> c.e </in>.<br>
-          Input<in> sf 500000 </in> and input<in> c.e </in>.<br>
-          Input<in> sf 1000000 </in> and input<in> c.e </in>.<br><br>
+          Enter<in> sf 10000 </in> and then enter<in> c.e </in>.<br>
+          Enter<in> sf 100000 </in> and then enter<in> c.e </in>.<br>
+          Enter<in> sf 200000 </in> and then enter<in> c.e </in>.<br>
+          Enter<in> sf 500000 </in> and then enter<in> c.e </in>.<br>
+          Enter<in> sf 1000000 </in> and then enter<in> c.e </in>.<br><br>
           Please observe the time needed for the calculation at each step.
           You will see the time increase exponentially.
         </p>
@@ -486,8 +486,8 @@ Binary Accuracy:
           the mantissa nibbles using a term counter. In the case of this example, we
           use the "sstep" command to set the step counter to show every 5000 steps with
           the command<in> sstep 5000 </in>. The "show" and "showoff" commands will turn
-          on and off the progress bar. Input<in> show </in> to enable the progress bar.
-          Then repeat the calcualtion with input<in> c.e </in>.
+          on and off the progress bar. Enter<in> show </in> to enable the progress bar.
+          Then repeat the calculation by entering<in> c.e </in>.
         </p>
 
 <pre class='pre-tutorial'>

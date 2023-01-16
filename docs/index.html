@@ -41,13 +41,13 @@
           This is a work in progress...
         </p>
         <p>
-          Calc-pi is a 64 bit assembly languge program used to calculate &#960; (pi).
+          Calc-pi is a 64 bit assembly language program used to calculate &#960; (pi).
           The interface is a simple text based RPN calculator intended
           to run in a Linux command line bash shell.
           It is fully stand alone and has no external library dependencies.
         </p>
         <div class="desc-title">
-          Exmple: pi to 1000 digits
+          Example: pi to 1000 digits
         </div>
 <pre class="pre-example">
 
@@ -97,7 +97,7 @@
         </p>
         <p>
           Documentation:
-            <a href="https://cotarr.github.io/calc-pi-x86-64-asm/docs/">cotarr.github.io/calc-pi-x86-64-asm/docs/</a>
+            <a href="https://cotarr.github.io/calc-pi-x86-64-asm/">https://cotarr.github.io/calc-pi-x86-64-asm/</a>
         </p>
 
 
@@ -112,7 +112,7 @@
         </p>
         <p>
           System memory used for floating point number variables are defined in
-          math.asm using RESQ statements to declare unitialized blocks of memory
+          math.asm using RESQ statements to declare uninitialized blocks of memory
           in the BSS section. These are statically allocated when the program is
           started as part of the load image. No memory is dynamically allocated.
         </p>
@@ -135,10 +135,11 @@
           What is this? What is it not?
         </div>
         <p>
-          I simple terms, it is a set of assembly language floating point math calculations that
+          In simple terms, it is a set of assembly language floating point math calculations that
           can calculate several numeric constants like pi, e, ln(2) and square root of 2.
           In order to develop these internal functions,
-          I wrapped the math capabilties into a very simple text based RNP calculator program.
+          the math capabilities are wrapped into a very simple text based 
+          <a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation">RPN</a> calculator program.
           This calculator interface provides a very useful way to work with calculations as
           they are written and debugged.
         </p>
@@ -147,14 +148,14 @@
           It is not intended to be a programming language.
           All of the internal programs are written in assembler, and there is no high level
           language programming capabilities.
-          No validation or testing of the math functions has been perforemed.
+          No validation or testing of the math functions has been performed.
         </p>
         <div class="desc-title">
           A word about arithmetic.
         </div>
         <p>
           Internal to the program, numbers are stored in binary floating point format using a
-          64 bit exponent and an abritrary number of 64 bit words as the mantissa. Numbers
+          64 bit exponent and an arbitrary number of 64 bit words as the mantissa. Numbers
           are normalized by rotating bits until the most significant bit is non-zero.
           Negataive numbers are 2's complement.
         </p>
@@ -162,10 +163,10 @@
           The primary backbone calculation is a set of functions for binary floating point bitwise addition, subtraction,
           multiplication and long division. This is a simple straight forward way to
           do arithmetic with low risk of errors. Its easy to write and easy to debug.
-          However, it is unfortuantely very slow. It is  literally operating on the numbers bit by bit.
+          However, it is unfortunately very slow. It is  literally operating on the numbers bit by bit.
           To speed up the calculation, several shortcuts have been added.
           These include: reducing the accuracy of
-          multiplicataion and division when summing an infinite series, suspending normalization
+          multiplication and division when summing an infinite series, suspending normalization
           for intermediate calculations, replacing long division with multiplication of reciprocal,
           and using internal processor MUL command to
           multiply 64 bit registers to a 128 bit result, and DIV to divide 128 bit number
@@ -187,7 +188,7 @@
         </p>
         <p>
           Programming of these efficiency tricks was typically developed using the summation of &#931; (1/n!)
-          to calculate e. Experiments involving various software edits were put into a spreadsheet for comparrsion.
+          to calculate e. Experiments involving various software edits were put into a spreadsheet for comparison.
           The following chart shows a little history of efforts to improve the speed. However, after
           working with these improvements for a while, it seems programming "tricks" to improve speed can often
           cause unexpected errors or artifacts.
