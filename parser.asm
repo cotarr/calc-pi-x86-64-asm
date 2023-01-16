@@ -353,6 +353,9 @@ ParseCmd:
 	; check 16 bit word  '.' + 00
 	cmp	[rax], word 0x002E
 	je	.not_number
+	; check 16 bit word  '.' + ' ' (period + space, used to print formatted ". f"
+	cmp	[rax], word 0x202E
+	je	.not_number
 	; check 16 bit word  ' ' + 00
 	cmp	[rax], word 0x0020
 	je	.not_number

@@ -37,6 +37,13 @@
           Change Log (Linux 64 Bit)
         </div>
         <p>
+          2023-01-16 - Fixed bug in input parser. The print formatted command &quot;. f&quot; 
+          was incorrectly classified as numeric and FP_Input was called causing a 
+          number conversion error. File parser.asm was updated to recognize 
+          input strings starting with 0x2E, 0x20 (period space) to be considered non-numeric 
+          and input will be passed to the command parser.
+        </p>
+        <p>
           2020-05-04 - In the case of very large exponents, floating point input routine now
           can adjust exponent is steps of 1E+15 in a way that allows use of the 64/128 bit MUL
           and DIV commands. Benchmark: at accuracy of 1,000,000 digits, binary conversion of "+1E-100000"
